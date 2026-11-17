@@ -1,0 +1,24 @@
+@using DMS.Web.Services.Export
+@model TableData
+<div class="audit-report-scroll">
+    <table class="table table-sm audit-report-grid mb-0">
+        <thead><tr>@foreach(var column in Model.Columns){<th scope="col">@column</th>}</tr></thead>
+        <tbody>
+        @if(Model.Rows.Count==0){<tr><td colspan="@Model.Columns.Count" class="text-center text-muted py-4">No entries in this category for the selected events.</td></tr>}
+        @foreach(var row in Model.Rows)
+        {
+            <tr>
+            @for(int i=0;i<row.Length;i++)
+            {
+                var text=row[i] is DateTime date?date.ToString("dd-MMM-yyyy HH:mm:ss.fff",System.Globalization.CultureInfo.InvariantCulture):TableExport.Text(row[i]);
+                var column=Model.Columns[i];
+                <td class="@(column=="Old Value"?"audit-old":column=="New Value"?"audit-new":"")">
+                    @if(i==0 && text.StartsWith("AT-") && long.TryParse(text[3..],out var id)) {<a asp-action="Details" asp-route-id="@id">@text</a>}
+                    else { <span class="audit-cell-value">@text</span> }
+                </td>
+            }
+            </tr>
+        }
+        </tbody>
+    </table>
+</div>

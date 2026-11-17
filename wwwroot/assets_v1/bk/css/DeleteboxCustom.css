@@ -1,0 +1,29 @@
+﻿.red-header {
+    background-color: #F06548 !important; /* Sets the background color of the header to red */
+    height: 50px
+}
+
+    .red-header .btn-close:hover {
+        background-color: transparent !important;
+        color: white !important;
+    }
+a.custom-link {
+    color: blue !important; /* Set link color to blue */
+    text-decoration: underline !important;
+    ; /* Underline text */
+}
+
+    a.custom-link:hover {
+        color: darkblue !important;
+        ; /* Darker shade of blue on hover */
+        text-decoration: none !important;
+        ; /* Remove underline on hover */
+    }
+.black-text {
+    color: white;
+}
+.small-btn {
+    font-size: 12px !important; /* Adjust font size for smaller text */
+    padding: 0px 0px !important; /* Adjust padding for smaller size */
+    width: 120px !important; /* Fixed width */
+}

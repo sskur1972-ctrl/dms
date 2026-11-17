@@ -1,0 +1,400 @@
+﻿@using DMS.Model.Account
+@model LoginViewModel
+@{
+    Layout = null;
+    ViewBag.Title = "Login";
+}
+
+<!DOCTYPE html>
+<html lang="en" class="h-100">
+
+<head>
+    <!-- Title -->
+    <title>Empowering compliance through digital innovation.</title>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="author" content="Adhik Software Pvt Ltd">
+
+    <!-- MOBILE SPECIFIC -->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="~/assets_v1/js/jquery-3.6.0.min.js"></script>
+    <!-- Favicon icon -->
+    <link rel="icon" type="image/png" sizes="16x16" href="~/assets_v1/images/favicon.ico">
+    <link href="~/assets_v1/css/style.css" rel="stylesheet">
+    <script src="~/assets_v1/js/jquery-3.6.0.min.js"></script>
+
+    <!-- CSS -->
+    <link href="~/assets_v1/vendor/jqvmap/css/jqvmap.min.css" rel="stylesheet">
+    <link href="~/assets_v1/vendor/chartist/css/chartist.min.css" rel="stylesheet">
+    <link href="~/assets_v1/vendor/sweetalert2/dist/sweetalert2.min.css" rel="stylesheet">
+    <link href="~/assets_v1/vendor/owl-carousel/owl.carousel.css" rel="stylesheet">
+    <link href="~/assets_v1/css/style.css" rel="stylesheet">
+    <style>
+        /* Left panel gradient background */
+        .login-account .account-info-area {
+            background: linear-gradient(135deg, #0D7C66 0%, #0A5A4B 100%) !important;
+            position: relative;
+            overflow: hidden;
+        }
+
+            .login-account .account-info-area:after {
+                background-color: #0A5A4B !important;
+                opacity: 0.15;
+            }
+
+        /* Welcome heading - shift from indigo to charcoal for cohesion with teal theme */
+        .login-head .title {
+            color: #1F2937 !important;
+        }
+
+        .login-head p {
+            color: #5B6B67 !important;
+        }
+
+        .login-title span {
+            color: #0D7C66 !important;
+        }
+
+        /* Input fields - teal-tinted instead of blue-gray */
+        .form-control {
+            background-color: #EEF4F2 !important;
+            border: 1px solid #D5E3DF !important;
+            border-radius: 8px !important;
+            transition: all 0.2s ease-in-out;
+        }
+
+            .form-control:focus {
+                background-color: #FFFFFF !important;
+                border-color: #0D7C66 !important;
+                box-shadow: 0 0 0 3px rgba(13, 124, 102, 0.15) !important;
+            }
+
+        .form-label {
+            color: #0D7C66 !important;
+            font-weight: 600;
+        }
+
+        /* Forgot password link */
+        .btn-link.text-primary {
+            color: #0D7C66 !important;
+        }
+
+        /* Primary button */
+        .btn-primary {
+            border-color: #0D7C66 !important;
+            background-color: #0D7C66 !important;
+            border-radius: 8px !important;
+            padding: 12px !important;
+            font-weight: 600;
+            transition: all 0.2s ease-in-out;
+        }
+
+            .btn-primary:hover {
+                background-color: #0A5A4B !important;
+                border-color: #0A5A4B !important;
+                box-shadow: 0 4px 12px rgba(13, 124, 102, 0.3);
+            }
+
+        /* ===== New: floating decorative icons ===== */
+        .floating-icons {
+            position: absolute;
+            inset: 0;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+            .floating-icons i {
+                position: absolute;
+                color: rgba(255, 255, 255, 0.10);
+                animation: floatIcon 9s ease-in-out infinite;
+            }
+
+                .floating-icons i:nth-child(1) {
+                    top: 8%;
+                    left: 10%;
+                    font-size: 46px;
+                    animation-delay: 0s;
+                }
+
+                .floating-icons i:nth-child(2) {
+                    top: 70%;
+                    left: 78%;
+                    font-size: 60px;
+                    animation-delay: 1.5s;
+                }
+
+                .floating-icons i:nth-child(3) {
+                    top: 55%;
+                    left: 6%;
+                    font-size: 34px;
+                    animation-delay: 3s;
+                }
+
+                .floating-icons i:nth-child(4) {
+                    top: 12%;
+                    left: 80%;
+                    font-size: 30px;
+                    animation-delay: 4.5s;
+                }
+
+                .floating-icons i:nth-child(5) {
+                    top: 85%;
+                    left: 30%;
+                    font-size: 40px;
+                    animation-delay: 2.2s;
+                }
+
+        @@keyframes floatIcon {
+            0% {
+                transform: translateY(0) rotate(0deg);
+            }
+
+            50% {
+                transform: translateY(-18px) rotate(6deg);
+            }
+
+            100% {
+                transform: translateY(0) rotate(0deg);
+            }
+        }
+
+        /* ===== New: rotating quote carousel ===== */
+        .quote-carousel {
+            position: relative;
+            z-index: 1;
+            margin-top: 36px;
+            min-height: 80px;
+            padding: 0 12px;
+        }
+
+        .quote-slide {
+            position: absolute;
+            width: 100%;
+            left: 0;
+            opacity: 0;
+            transform: translateY(10px);
+            transition: opacity 0.6s ease, transform 0.6s ease;
+        }
+
+            .quote-slide.active {
+                position: relative;
+                opacity: 1;
+                transform: translateY(0);
+            }
+
+        .quote-text {
+            color: #FFFFFF;
+            font-size: 15px;
+            font-style: italic;
+            line-height: 1.5;
+            margin-bottom: 6px;
+            opacity: 0.95;
+        }
+
+            .quote-text:before {
+                content: "\201C";
+            }
+
+            .quote-text:after {
+                content: "\201D";
+            }
+
+        .quote-author {
+            color: rgba(255, 255, 255, 0.75);
+            font-size: 13px;
+            font-weight: 600;
+            letter-spacing: 0.3px;
+        }
+
+        .quote-dots {
+            display: flex;
+            justify-content: center;
+            gap: 6px;
+            margin-top: 18px;
+            position: relative;
+            z-index: 1;
+        }
+
+            .quote-dots span {
+                width: 6px;
+                height: 6px;
+                border-radius: 50%;
+                background: rgba(255, 255, 255, 0.35);
+                transition: background 0.3s ease;
+            }
+
+                .quote-dots span.active {
+                    background: #FFFFFF;
+                }
+
+        .login-content {
+            position: relative;
+            z-index: 1;
+        }
+
+        .show-pass {
+            cursor: pointer;
+        }
+
+            .show-pass .fa-eye {
+                display: none;
+            }
+    </style>
+
+</head>
+
+<body class="h-100">
+    <div class="login-account">
+        <div class="row h-100">
+            <div class="col-lg-6 align-self-start">
+                <div class="account-info-area">
+
+                    <!-- Subtle floating icons for visual interest -->
+                    <div class="floating-icons">
+                        <i class="fa fa-flask"></i>
+                        <i class="fa fa-clipboard-check"></i>
+                        <i class="fa fa-industry"></i>
+                        <i class="fa fa-vial"></i>
+                        <i class="fa fa-shield-alt"></i>
+                    </div>
+
+                    <div class="login-content">
+                        <p class="sub-title">Log in to your dashboard with your credentials</p>
+                        <h1 class="title">Every Document. Every Step. Every Time.</h1>
+                        <p class="text">Ensuring Quality, Compliance, and Traceability.</p>
+
+                        <!-- Rotating quote carousel -->
+                        <div class="quote-carousel" id="quoteCarousel">
+                            <div class="quote-slide active">
+                                <p class="quote-text">Reduced our document deviation errors by 55% within the first quarter of going live.</p>
+                                <p class="quote-author">— Plant QA Reviewer</p>
+                            </div>
+                            <div class="quote-slide">
+                                <p class="quote-text">Complete traceability, zero paperwork. Audits that used to take days now take hours.</p>
+                                <p class="quote-author">— Compliance Manager</p>
+                            </div>
+                            <div class="quote-slide">
+                                <p class="quote-text">Real-time visibility into every batch, every step, every time.</p>
+                                <p class="quote-author">— Production Head</p>
+                            </div>
+                        </div>
+                        <div class="quote-dots" id="quoteDots">
+                            <span class="active"></span>
+                            <span></span>
+                            <span></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6 col-md-7 col-sm-12 mx-auto align-self-center">
+                <div class="login-form">
+                    <div class="login-head">
+                        <h3 class="title">Welcome Back</h3>
+                        <p></p>
+                    </div>
+                    <h6 class="login-title"><span>Login</span></h6>
+
+                    <form asp-action="Login" method="post" class="row g-3 needs-validation" novalidate>
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="returnUrl" value="@ViewBag.ReturnUrl" />
+                        @Html.HiddenFor(m => m.Attempts)
+                        @Html.HiddenFor(m => m.prevUser)
+                        <input type="hidden" asp-for="created_on" />
+
+                        <div class="mb-4">
+                            <label asp-for="username" class="form-label"></label>
+                            <input asp-for="username" required class="form-control" placeholder="Enter Username" autocomplete="off" />
+                            <span asp-validation-for="username" class="text-danger"></span>
+                        </div>
+                        <div class="mb-4 position-relative">
+                            <label asp-for="Password" class="form-label"></label>
+                            <input id="dz-password" type="password" asp-for="Password" required class="form-control" placeholder="Enter Password" autocomplete="off" />
+                            <span asp-validation-for="Password" class="text-danger"></span>
+                            <span class="show-pass eye">
+                                <i class="fa fa-eye-slash"></i>
+                                <i class="fa fa-eye"></i>
+                            </span>
+                        </div>
+                        <div class="form-row d-flex justify-content-between mt-4 mb-2">
+                            <div class="mb-4"></div>
+                            <div class="mb-4">
+                                <a href="">Forgot Password?</a>
+                            </div>
+                        </div>
+
+                        <div class="text-center mb-4">
+                            <button type="submit" class="btn btn-primary btn-block">Sign Me In</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <partial name="_Notification" />
+    <!-- Scripts -->
+
+    <script src="~/assets_v1/vendor/global/global.min.js"></script>
+    <script src="~/assets_v1/vendor/sweetalert2/dist/sweetalert2.min.js"></script>
+    <script src="~/assets_v1/vendor/peity/jquery.peity.min.js"></script>
+    <script src="~/assets_v1/js/custom.min.js"></script>
+    <script src="~/assets_v1/js/deznav-init.js"></script>
+    <script>
+        $(document).on('click', '.show-pass', function () {
+            var passwordInput = $('#dz-password');
+            var icon = $(this).find('i');
+
+            if (passwordInput.attr('type') === 'password') {
+                passwordInput.attr('type', 'text');
+
+                icon.filter('.fa-eye-slash').hide();
+                icon.filter('.fa-eye').show();
+            } else {
+                passwordInput.attr('type', 'password');
+
+                icon.filter('.fa-eye').hide();
+                icon.filter('.fa-eye-slash').show();
+            }
+        });
+    </script>
+    <script>
+        // Toggle password visibility
+        var passToggle = document.querySelector(".show-pass.eye");
+        debugger
+        if (passToggle) {
+            passToggle.addEventListener("click", function () {
+                var passwordInput = document.getElementById("dz-password");
+                if (passwordInput.type === "password") {
+                    passwordInput.type = "text";
+                    this.classList.add("active");
+                } else {
+                    passwordInput.type = "password";
+                    this.classList.remove("active");
+                }
+            });
+        }
+
+        // Rotating quote carousel
+        (function () {
+            var slides = document.querySelectorAll('#quoteCarousel .quote-slide');
+            var dots = document.querySelectorAll('#quoteDots span');
+            var current = 0;
+            var total = slides.length;
+
+            if (total <= 1) return;
+
+            setInterval(function () {
+                slides[current].classList.remove('active');
+                dots[current].classList.remove('active');
+
+                current = (current + 1) % total;
+
+                slides[current].classList.add('active');
+                dots[current].classList.add('active');
+            }, 4500);
+        })();
+    </script>
+
+</body>
+
+</html>

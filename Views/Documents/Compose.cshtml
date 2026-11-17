@@ -1,0 +1,97 @@
+@using DMS.Web.Services.Authoring
+@model AuthoringSession
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var s = Model;
+    ViewData["PageTitle"] = $"{s.DocumentNumber} - write";
+    ViewData["Section"] = "Documents";
+    string pageSetupJson = ViewBag.pageSetupJson as string ?? "";
+}
+@* The in-application document editor (ported from Bcl.Dms Documents/Compose).
+   The body is sanitised on the server on every save; the .docx is produced from it and becomes the revision's file. *@
+<link rel="stylesheet" href="~/css/dms-editor.css" asp-append-version="true" />
+
+<div class="dms-compose-bar mt-2">
+    <span class="dms-mono fw-semibold">@s.DocumentNumber</span>
+    <span class="dms-compose-title" title="@s.Title">@s.Title</span>
+    <span class="badge @(string.IsNullOrEmpty(s.StateBadge) ? "bg-secondary" : s.StateBadge)">@s.StateName</span>
+    <span class="badge bg-secondary">Rev @s.DisplayRevision</span>
+    @if (!string.IsNullOrWhiteSpace(s.TemplateName))
+    {
+        <span class="badge bg-light text-dark border" title="Started from this template. Keep its section headings - reviewers expect the same sections, in the same order, in every document of this type.">@s.TemplateName</span>
+    }
+    <div class="d-flex flex-wrap align-items-center gap-2 ms-auto">
+        @await Html.PartialAsync("_ReindexAction", s.DocumentVersionId)
+        <a class="btn btn-sm btn-outline-secondary" asp-action="Details" asp-route-id="@s.DocumentId">Back to document</a>
+    </div>
+</div>
+
+@Html.AntiForgeryToken()
+
+@if (s.RestoredFromDraft)
+{
+    <div class="dms-note dms-note-warn">
+        <span>
+            <strong>Restored from an unsaved draft.</strong>
+            This is what you had typed at @(s.DraftSavedAt?.ToString("dd-MMM-yyyy HH:mm") ?? "the last autosave"), kept on the server
+            after your last save. It is <em>not</em> yet part of the document - press <strong>Save</strong> to make it so, or
+            <button type="button" class="btn btn-link btn-sm p-0 align-baseline" onclick="openReasonModal(this)"
+                    data-url="@Url.Action("DiscardDraft")" data-fields='@Json.Serialize(new { versionId = s.DocumentVersionId })'
+                    data-input="none" data-title="Discard unsaved draft"
+                    data-text="Discard the restored draft and go back to the last saved version? Anything typed since that save is lost.">discard it</button>
+            to go back to the last saved version.
+        </span>
+    </div>
+}
+
+@if (s.DerivedFromUploadedFile && !string.IsNullOrWhiteSpace(s.DerivationNotice))
+{
+    <div class="dms-note dms-note-warn"><span><strong>Read in from the uploaded file.</strong> @s.DerivationNotice</span></div>
+}
+
+<div class="dms-editor" data-dms-editor
+     data-document-id="@s.DocumentId"
+     data-version-id="@s.DocumentVersionId"
+     data-save-url="@Url.Action("SaveContent")"
+     data-autosave-url="@Url.Action("AutosaveContent")"
+     data-autosave-seconds="@s.AutosaveSeconds"
+     data-max-image-bytes="@s.MaxImageBytes"
+     data-header-footer="@(s.HeaderFooterEnabled ? "1" : "0")"
+     data-page-setup="@pageSetupJson"
+     data-read-only="0">
+
+    <partial name="_EditorRibbon" model="@(new EditorRibbonViewModel { IsTemplate = false, DocumentId = s.DocumentId, HeaderFooterEnabled = s.HeaderFooterEnabled })" />
+
+    <div class="dms-editor-body">
+        <aside class="dms-nav" data-dms-nav hidden aria-label="Document navigation">
+            <div class="dms-nav-title">Navigation</div>
+            <div class="dms-nav-list" data-dms-nav-list></div>
+        </aside>
+        <div class="dms-editor-canvas" data-dms-canvas>
+            <div class="dms-page-stack">
+                <div class="dms-pages" data-dms-pages aria-hidden="true"></div>
+                @* already through the server-side whitelist sanitiser (EditorHtmlSanitizer) *@
+                <div class="dms-editor-surface" data-dms-editor-surface spellcheck="true"
+                     role="textbox" aria-multiline="true" aria-label="Document body">@Html.Raw(s.Html)</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="dms-editor-footer">
+        <span class="dms-editor-status" data-dms-editor-status>Ready</span>
+        <span class="dms-editor-meta">
+            <span data-dms-page-count></span>
+            <span data-dms-editor-count></span>
+            @if (s.EditCount > 0) { <span>Saved @s.EditCount&times;</span> }
+        </span>
+    </div>
+
+    <input type="hidden" data-dms-editor-rowversion value="@s.RowVersion" />
+    <input type="file" class="d-none" data-dms-editor-image-input accept="image/png,image/jpeg,image/gif,image/webp" />
+</div>
+
+<partial name="_ReasonModal" />
+
+@section Scripts {
+    <script src="~/js/dms-editor.js" asp-append-version="true"></script>
+}

@@ -1,0 +1,117 @@
+@{
+    ViewData["PageTitle"] = "AI Features";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var extractedText = TempData["AiToolText"] as string;
+}
+<partial name="_AdminPageTitle" />
+<div class="row g-3">
+    <div class="col-12"><div id="aiToolStatus" role="status" aria-live="polite"></div></div>
+    <div class="col-12">
+        <div class="alert alert-light border mb-0">
+            Office editor: <strong>@ViewBag.OfficeProvider</strong>.
+            PDF to Word uses LibreOffice on this application server; scanned PDFs use the configured OCR service and may have different layout.
+            @if (ViewBag.OfficeError != null) { <span class="text-warning">@ViewBag.OfficeError</span> }
+        </div>
+    </div>
+    @if (TempData["AiToolError"] is string error) { <div class="col-12"><div class="alert alert-danger mb-0">@error</div></div> }
+    @if (TempData["AiToolMessage"] is string message) { <div class="col-12"><div class="alert alert-success mb-0">@message</div></div> }
+    <div class="col-xl-6 col-12">
+        <div class="card h-100"><div class="card-header"><h5 class="mb-0">OCR · Scanned document</h5></div><div class="card-body">
+            <p class="text-muted">Extract text from a scanned PDF. OCR must be enabled and configured in AI settings.</p>
+            <form asp-action="OcrUpload" method="post" enctype="multipart/form-data" data-ai-form="ocr">
+                @Html.AntiForgeryToken()
+                <label class="form-label" for="ocrPdf">Scanned PDF (up to 25 MB)</label>
+                <input class="form-control mb-3" id="ocrPdf" name="file" type="file" accept=".pdf,application/pdf" required />
+                <button class="btn btn-primary" type="submit" disabled="@(ViewBag.OcrEnabled != true)">Extract text</button>
+                @if (ViewBag.OcrEnabled != true) { <span class="small text-muted ms-2">Enable ai.ocr.enabled and configure ai.ocr.endpoint.</span> }
+            </form>
+        </div></div>
+    </div>
+    <div class="col-xl-6 col-12">
+        <div class="card h-100"><div class="card-header"><h5 class="mb-0">Image to OCR</h5></div><div class="card-body">
+            <p class="text-muted">Upload an image to extract its text using the configured OCR service.</p>
+            <form asp-action="OcrUpload" method="post" enctype="multipart/form-data" data-ai-form="ocr">
+                @Html.AntiForgeryToken()
+                <label class="form-label" for="ocrImage">Image (PNG, JPG, TIFF or BMP; up to 25 MB)</label>
+                <input class="form-control mb-3" id="ocrImage" name="file" type="file" accept=".png,.jpg,.jpeg,.tif,.tiff,.bmp,image/*" required />
+                <button class="btn btn-primary" type="submit" disabled="@(ViewBag.OcrEnabled != true)">Extract text</button>
+                @if (ViewBag.OcrEnabled != true) { <span class="small text-muted ms-2">Enable ai.ocr.enabled and configure ai.ocr.endpoint.</span> }
+            </form>
+        </div></div>
+    </div>
+    <div class="col-xl-6 col-12">
+        <div class="card h-100"><div class="card-header"><h5 class="mb-0">PDF to Word</h5></div><div class="card-body">
+            <p class="text-muted">Convert text-based PDFs with LibreOffice Writer import. Scanned PDFs use OCR and produce editable recognized text; page layout may differ.</p>
+            <form asp-action="PdfToWord" method="post" enctype="multipart/form-data" data-ai-form="pdf">
+                @Html.AntiForgeryToken()
+                <label class="form-label" for="pdfConvert">PDF file (up to 25 MB)</label>
+                <input class="form-control mb-3" id="pdfConvert" name="file" type="file" accept=".pdf,application/pdf" required />
+                <button class="btn btn-primary" type="submit" disabled="@(ViewBag.CanConvert != true)">Convert to Word</button>
+                @if (ViewBag.CanConvert != true) { <span class="small text-danger ms-2">@ViewBag.PdfToWordStatus</span> }
+                else if (ViewBag.OcrEnabled != true) { <span class="small text-muted ms-2">Scanned PDFs require ai.ocr.enabled and a configured OCR endpoint.</span> }
+            </form>
+        </div></div>
+    </div>
+    <div class="col-xl-6 col-12">
+        <div class="card h-100"><div class="card-header"><h5 class="mb-0">Smart Search</h5></div><div class="card-body">
+            <p class="text-muted">Search accessible document titles and indexed content by words or meaning.</p>
+            <a class="btn btn-primary" asp-action="Search">Open Smart Search</a>
+        </div></div>
+    </div>
+    @if (!string.IsNullOrWhiteSpace(extractedText))
+    {
+        <div class="col-12"><div class="card"><div class="card-header"><h5 class="mb-0">Extracted text</h5></div><div class="card-body"><textarea class="form-control" rows="16" readonly>@extractedText</textarea></div></div></div>
+    }
+</div>
+<script>
+    (function () {
+        const status = document.getElementById('aiToolStatus');
+        function showError(message) {
+            status.replaceChildren();
+            const alert = document.createElement('div'); alert.className = 'alert alert-danger'; alert.textContent = message;
+            status.appendChild(alert);
+        }
+        document.querySelectorAll('form[data-ai-form]').forEach(function (form) {
+            form.addEventListener('submit', async function (event) {
+                event.preventDefault();
+                if (!form.reportValidity()) return;
+                const button = form.querySelector('button[type="submit"]');
+                const original = button.textContent;
+                button.disabled = true; button.textContent = form.dataset.aiForm === 'pdf' ? 'Converting…' : 'Extracting…';
+                status.replaceChildren();
+                if (window.DmsLoader) window.DmsLoader.start(form);
+                try {
+                    const response = await fetch(form.action, {
+                        method: 'POST', body: new FormData(form), credentials: 'same-origin',
+                        headers: { 'X-Requested-With': 'XMLHttpRequest' }, dmsBackground: true
+                    });
+                    if (!response.ok) {
+                        const error = await response.json().catch(function () { return {}; });
+                        throw new Error(error.error || 'The operation failed. Check the configured service and try again.');
+                    }
+                    if (form.dataset.aiForm === 'pdf') {
+                        const blob = await response.blob();
+                        const disposition = response.headers.get('Content-Disposition') || '';
+                        const match = disposition.match(/filename\*=UTF-8''([^;]+)|filename="?([^";]+)"?/i);
+                        const name = match ? decodeURIComponent(match[1] || match[2]) : 'converted.docx';
+                        const url = URL.createObjectURL(blob); const link = document.createElement('a');
+                        link.href = url; link.download = name; document.body.appendChild(link); link.click(); link.remove();
+                        setTimeout(function () { URL.revokeObjectURL(url); }, 1000);
+                        const done = document.createElement('div'); done.className = 'alert alert-success'; done.textContent = 'Word file converted and downloaded.'; status.appendChild(done);
+                    } else {
+                        const result = await response.json();
+                        const message = document.createElement('div'); message.className = 'alert alert-success'; message.textContent = result.message; status.appendChild(message);
+                        if (result.text) {
+                            const card = document.createElement('div'); card.className = 'card mt-3';
+                            const heading = document.createElement('div'); heading.className = 'card-header fw-semibold'; heading.textContent = 'Extracted text';
+                            const body = document.createElement('div'); body.className = 'card-body';
+                            const textarea = document.createElement('textarea'); textarea.className = 'form-control'; textarea.rows = 16; textarea.readOnly = true; textarea.value = result.text;
+                            body.appendChild(textarea); card.append(heading, body); status.appendChild(card);
+                        }
+                    }
+                } catch (error) { showError(error.message || 'The operation failed.'); }
+                finally { if (window.DmsLoader) window.DmsLoader.stop(form); button.disabled = false; button.textContent = original; }
+            });
+        });
+    })();
+</script>

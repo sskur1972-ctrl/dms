@@ -1,0 +1,107 @@
+@using DMS.Model.Master
+@using DMS.Model.Account
+@model NumberingRule
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["PageTitle"] = Model.id > 0 ? "Edit Numbering Rule" : "Add Numbering Rule";
+    var types = ViewBag.types as List<DocumentType> ?? new List<DocumentType>();
+    var departments = ViewBag.departments as List<DepartmentDropDownViewModel> ?? new List<DepartmentDropDownViewModel>();
+}
+<partial name="_AdminPageTitle" />
+
+<div class="row">
+    <div class="col-xl-12">
+        <div class="card">
+            <div class="card-header"><h4 class="card-title mb-0">@ViewData["PageTitle"]</h4></div>
+            <div class="alert alert-warning py-2 m-3 mb-0" role="alert" style="font-size: 14px;">
+                ⚠ One rule per document type and department. A department-specific rule wins over the "all departments" rule. The reason is recorded in the audit trail.
+            </div>
+            <div class="card-body">
+                <form asp-action="NumberingRuleEdit" method="post" class="row g-3" onsubmit="return checkReason()">
+                    <input type="hidden" asp-for="id" />
+                    <div class="form-group col-xl-6 mb-3">
+                        <label class="form-label" asp-for="document_type_id">Document Type</label> <span style="color: red;">*</span>
+                        <select asp-for="document_type_id" class="form-select" required disabled="@(Model.id > 0)">
+                            <option value="">-- Select --</option>
+                            @foreach (var t in types)
+                            {
+                                <option value="@t.id">@t.code - @t.name</option>
+                            }
+                        </select>
+                        @if (Model.id > 0) { <input type="hidden" asp-for="document_type_id" /> }
+                    </div>
+                    <div class="form-group col-xl-6 mb-3">
+                        <label class="form-label" asp-for="department_id"></label>
+                        <select asp-for="department_id" class="form-select" disabled="@(Model.id > 0)">
+                            <option value="">All departments</option>
+                            @foreach (var d in departments)
+                            {
+                                <option value="@d.id">@d.DisplayText</option>
+                            }
+                        </select>
+                        @if (Model.id > 0) { <input type="hidden" asp-for="department_id" /> }
+                    </div>
+                    <div class="form-group col-xl-3 mb-3">
+                        <label class="form-label" asp-for="mode"></label>
+                        <select asp-for="mode" class="form-select">
+                            <option value="AUTO">Automatic</option>
+                            <option value="MANUAL">Manual (author enters the number)</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-xl-5 mb-3">
+                        <label class="form-label" asp-for="pattern"></label> <span style="color: red;">*</span>
+                        <input asp-for="pattern" class="form-control font-monospace" maxlength="128" required oninput="preview()" />
+                    </div>
+                    <div class="form-group col-xl-2 mb-3">
+                        <label class="form-label" asp-for="prefix"></label>
+                        <input asp-for="prefix" class="form-control text-uppercase" maxlength="32" oninput="preview()" />
+                    </div>
+                    <div class="form-group col-xl-1 mb-3">
+                        <label class="form-label" asp-for="number_separator"></label>
+                        <input asp-for="number_separator" class="form-control" maxlength="4" />
+                    </div>
+                    <div class="form-group col-xl-1 mb-3">
+                        <label class="form-label" asp-for="sequence_width"></label>
+                        <input asp-for="sequence_width" type="number" min="1" max="10" class="form-control" oninput="preview()" />
+                    </div>
+                    <div class="col-xl-12 mb-2">
+                        <span class="text-muted">Example: </span><code id="numberPreview"></code>
+                    </div>
+                    <div class="col-xl-12 mb-2">
+                        <div class="form-check form-check-inline"><input class="form-check-input" asp-for="reset_yearly" /><label class="form-check-label" asp-for="reset_yearly"></label></div>
+                        <div class="form-check form-check-inline"><input class="form-check-input" asp-for="is_active" /><label class="form-check-label" asp-for="is_active"></label></div>
+                    </div>
+                    <div class="form-group col-xl-12 mb-3">
+                        <label class="form-label" for="reason">Reason for change</label> <span style="color: red;">*</span>
+                        <textarea id="reason" name="reason" class="form-control" rows="2" maxlength="1000" required></textarea>
+                        <span id="reason_error" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <div class="text-end">
+                            <a asp-action="NumberingRules" asp-route-documentTypeId="@(Model.document_type_id > 0 ? Model.document_type_id : null)" class="btn btn-primary ms-2">Back To List</a>
+                            <button type="submit" class="btn btn-success">Save</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    function preview() {
+        var pattern = document.getElementById('pattern').value || '';
+        var prefix = (document.getElementById('prefix').value || 'SOP').toUpperCase();
+        var width = parseInt(document.getElementById('sequence_width').value || '3', 10);
+        var now = new Date();
+        var seq = '1'.padStart(isNaN(width) ? 3 : width, '0');
+        document.getElementById('numberPreview').textContent = pattern
+            .replace(/\{PREFIX\}/g, prefix).replace(/\{TYPE\}/g, prefix).replace(/\{DEPT\}/g, 'QA').replace(/\{SEQ\}/g, seq)
+            .replace(/\{YYYY\}/g, String(now.getFullYear())).replace(/\{YY\}/g, String(now.getFullYear()).slice(2));
+    }
+    function checkReason() {
+        var ok = document.getElementById('reason').value.trim().length >= 3;
+        document.getElementById('reason_error').textContent = ok ? '' : 'Please enter the reason for this change.';
+        return ok;
+    }
+    document.addEventListener('DOMContentLoaded', preview);
+</script>

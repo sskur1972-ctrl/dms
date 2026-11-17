@@ -1,0 +1,6 @@
+@model DMS.Model.Master.ChangeControl
+<div class="mb-3"><label class="form-label">Change type *</label><select name="change_type" class="form-select" required><option value="">Select…</option><option value="PERMANENT" selected="@(Model.change_type=="PERMANENT")">Permanent</option><option value="TEMPORARY" selected="@(Model.change_type=="TEMPORARY")">Temporary</option></select></div>
+<div class="mb-3"><label class="form-label">Description *</label><textarea name="description" class="form-control" rows="3" minlength="3" maxlength="4000" required>@Model.description</textarea></div>
+<div class="mb-3"><label class="form-label">Reason for change *</label><textarea name="reason_for_change" class="form-control" rows="2" minlength="3" maxlength="4000" required>@Model.reason_for_change</textarea></div>
+<div class="mb-3"><label class="form-label">Impact assessment *</label><textarea name="impact_assessment" class="form-control" rows="2" minlength="3" maxlength="4000" required>@Model.impact_assessment</textarea></div>
+<div class="form-check mb-3"><input name="requires_action_plan" value="true" type="checkbox" class="form-check-input" id="cc-action-plan" checked="@Model.requires_action_plan" /><label class="form-check-label" for="cc-action-plan">Requires action plan</label></div>

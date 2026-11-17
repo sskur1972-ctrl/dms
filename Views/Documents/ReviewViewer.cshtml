@@ -1,0 +1,17 @@
+@using DMS.Model.Documents
+@model DocumentDetailsViewModel
+@{Layout="~/Views/Shared/_Layout.cshtml"; var d=Model.Document;var v=Model.CurrentVersion!;}
+<link rel="stylesheet" href="~/css/editor-workspace.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/restricted-viewer.css" asp-append-version="true" />
+<div class="dms-editor-toolbar"><strong>@d.document_number · @d.title</strong><span>Read-only review</span><div class="d-flex gap-2"><button type="button" id="dms-toggle-comments" class="btn btn-sm btn-outline-secondary" aria-expanded="true" aria-controls="dms-editor-comments">Hide comments</button><a class="btn btn-sm btn-outline-secondary" asp-action="Details" asp-route-id="@d.id">Back</a></div></div>
+<div class="dms-editor-shell" id="dms-review-viewer" data-edit-url="@ViewData["ViewerEditUrl"]"
+ data-section-url="@Url.Action("EditorSection",new{versionId=v.id})" data-section-options-url="@Url.Action("EditorSections",new{versionId=v.id})" data-comments-url="@Url.Action("EditorComments",new{versionId=v.id,mode="Review"})">
+ <section class="dms-restricted-pane" aria-label="Read-only document">
+  <div data-restricted-pdf data-pdf-url="@Url.Action("RenditionPdf",new{id=d.id,versionId=v.id})" data-status-url="@Url.Action("ViewerStatus",new{id=d.id,versionId=v.id})" data-page="@ViewData["ViewerPage"]"></div>
+ </section>
+ <aside class="dms-comment-pane" id="dms-editor-comments"><div id="dms-comment-status" role="status"></div><div id="dms-comment-content">@await Html.PartialAsync("_ReviewComments",Model)</div>
+ @if(Model.Attachments.Count>0){<div class="p-2"><h6>Attachments</h6>@foreach(var a in Model.Attachments){<div><a asp-action="Attachment" asp-route-id="@a.id" asp-route-documentId="@d.id" target="_blank" rel="noopener">@a.title</a></div>}</div>}
+ </aside>
+</div>
+<script type="module" src="~/js/restricted-viewer.mjs" asp-append-version="true"></script>
+<script src="~/js/review-viewer.js" asp-append-version="true"></script>

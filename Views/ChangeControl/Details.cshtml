@@ -1,0 +1,13 @@
+@model DMS.Model.Master.ChangeControl
+@{Layout="~/Views/Shared/_Layout.cshtml";ViewData["PageTitle"]="DOC Change Control";}
+<div class="card"><div class="card-header d-flex justify-content-between"><strong>@Model.cc_number · @Model.title</strong><a asp-action="Index" class="btn btn-sm btn-light">Back</a></div><div class="card-body">
+@if(Model.status=="UNVERIFIED"){
+<form asp-action="SaveDetails" method="post"><input type="hidden" name="id" value="@Model.id" />
+<div class="row g-3 mb-3"><div class="col-md-6"><label class="form-label">Applicability *</label><select name="applicability" class="form-select" required><option value="">Select…</option><option value="PLANT" selected="@(Model.applicability=="PLANT")">Plant</option><option value="GLOBAL" selected="@(Model.applicability=="GLOBAL")">Global</option></select></div>
+<div class="col-md-6"><label class="form-label">Plant (required for Plant scope)</label><input name="plant_reference" class="form-control" value="@Model.plant_reference" maxlength="128" /></div></div>
+<partial name="_DocFields" model="Model" /><button class="btn btn-primary" type="submit">Save DOC details</button></form>
+}else{
+<dl class="row"><dt class="col-sm-3">Status</dt><dd class="col-sm-9">@Model.status</dd><dt class="col-sm-3">Scope</dt><dd class="col-sm-9">@Model.applicability @Model.plant_reference</dd><dt class="col-sm-3">Change type</dt><dd class="col-sm-9">@Model.change_type</dd><dt class="col-sm-3">Description</dt><dd class="col-sm-9">@Model.description</dd><dt class="col-sm-3">Reason for change</dt><dd class="col-sm-9">@Model.reason_for_change</dd><dt class="col-sm-3">Impact assessment</dt><dd class="col-sm-9">@Model.impact_assessment</dd><dt class="col-sm-3">Action plan required</dt><dd class="col-sm-9">@(Model.requires_action_plan?"Yes":"No")</dd></dl>
+}
+@if(!string.IsNullOrWhiteSpace(Model.signature_summary)){<div class="border rounded p-3" style="white-space:pre-line">@Model.signature_summary</div>}
+</div></div>

@@ -1,0 +1,10 @@
+@using DMS.Web.Services.Intelligence
+@model List<IntelligenceHit>
+@{ViewData["PageTitle"]="Smart Search";Layout="~/Views/Shared/_Layout.cshtml";}
+<partial name="_AdminPageTitle" />
+<div class="card"><div class="card-body"><form method="get" class="input-group mb-3"><input name="q" value="@ViewBag.Query" class="form-control" maxlength="500" placeholder="Search by meaning, number or keywords" /><button class="btn btn-primary">Search</button></form>
+@if(ViewBag.Error!=null){<p class="text-danger">@ViewBag.Error</p>}
+<p class="small text-muted">@ViewBag.SearchMode · Searches the newest 1,000 accessible records and indexed content. Results respect document permissions. Semantic search uses the configured embedding model.</p>
+@foreach(var hit in Model){<div class="border-bottom py-3"><a asp-controller="Documents" asp-action="Details" asp-route-id="@hit.Id"><strong>@hit.Number · @hit.Title</strong></a><span class="badge bg-light text-dark ms-2">@hit.State</span><p class="mb-0">@hit.Snippet</p><small>Relevance @hit.Score.ToString("P0")</small></div>}
+@if(Model.Count==0&&ViewBag.Query!=null){<p>No matching accessible documents.</p>}
+</div></div>

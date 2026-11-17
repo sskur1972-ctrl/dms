@@ -1,0 +1,69 @@
+@using DMS.Model.Master
+@model List<BackupLog>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["PageTitle"] = "Backups";
+    Func<long?, string> size = b => b == null ? "" : b < 1024 * 1024 ? $"{b / 1024.0:0.0} KB" : b < 1024L * 1024 * 1024 ? $"{b / 1048576.0:0.0} MB" : $"{b / 1073741824.0:0.00} GB";
+}
+<partial name="_DataTableCSS" />
+<partial name="_AdminPageTitle" />
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-header border-0">
+                <form asp-action="Run" method="post" class="row g-3 align-items-end" onsubmit="document.getElementById('runBtn').disabled = true; document.getElementById('runBtn').innerText = 'Running...';">
+                    <div class="col-sm-3">
+                        <label class="form-label mb-1">Backup Type</label>
+                        <select name="backupType" class="form-select">
+                            <option value="COMBINED">Database + file store</option>
+                            <option value="DB_FULL">Database only (pg_dump)</option>
+                            <option value="FILES">File store only (zip)</option>
+                        </select>
+                    </div>
+                    <div class="col-sm-auto"><button id="runBtn" type="submit" class="btn btn-danger"><i class="ri-database-2-line me-1"></i> Run Backup Now</button></div>
+                    <div class="col-sm text-muted small">Written to <code>backup.targetPath</code> with a <code>manifest.sha256</code>. pg_dump is taken from <code>backup.pgdumpPath</code>, the file store from <code>Dms:Storage:Root</code> (appsettings.json). A backup is only proven by a test restore.</div>
+                </form>
+            </div>
+            <div class="card-body">
+                <table id="assetlist" class="table nowrap dt-responsive align-middle table-hover table-bordered" style="width:100%">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Started</th>
+                            <th>Type</th>
+                            <th>Trigger</th>
+                            <th>Status</th>
+                            <th>By</th>
+                            <th>Size</th>
+                            <th>Files</th>
+                            <th>Location</th>
+                            <th>SHA-256</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var b in Model)
+                        {
+                            var badge = b.status switch { "SUCCESS" => "bg-success", "FAILED" => "bg-danger", "RUNNING" => "bg-info", _ => "bg-secondary" };
+                            <tr>
+                                <td data-order="@b.started_at.ToString("yyyyMMddHHmmss")">@b.started_at.ToString("dd-MMM-yyyy HH:mm:ss")</td>
+                                <td>@b.backup_type</td>
+                                <td>@b.trigger_source</td>
+                                <td><span class="badge @badge">@b.status</span>@if (!string.IsNullOrEmpty(b.error_detail)) { <br /><small class="text-danger text-wrap">@b.error_detail</small> }</td>
+                                <td>@b.triggered_by_name</td>
+                                <td>@size(b.size_bytes)</td>
+                                <td>@b.file_count</td>
+                                <td><small>@b.target_path</small></td>
+                                <td><small class="font-monospace">@(b.sha256?.Trim().Length > 16 ? b.sha256.Trim()[..16] + "…" : b.sha256)</small></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<partial name="_AdminTableJS" />
+<script>
+    document.addEventListener('DOMContentLoaded', function () { initAdminTable('#assetlist', [0, 1, 2, 3, 4, 5, 6, 7, 8], [[0, 'desc']]); });
+</script>

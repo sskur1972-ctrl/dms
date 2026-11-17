@@ -1,0 +1,150 @@
+{
+  "Database": {
+    "AutoUpgrade": true
+  },
+  "SharedAuthentication": {
+    "Mode": "Standalone",
+    "ApplicationName": "UnifiedPlatform.SharedAuthentication",
+    "CookieName": ".UnifiedPlatform.SharedAuth",
+    "CookieDomain": "",
+    "CommonLoginUrl": "https://localhost:7080/Account/Login",
+    "CommonLogoutUrl": "",
+    "KeyPath": "C:\\SharedAuthentication\\Keys"
+  },
+  "Dms": {
+    "Storage": {
+      "Root": "App_Data/filestore"
+    },
+    "Redis": {
+      "Enabled": true,
+      "InstanceName": "dms:",
+      "PdfExpirationMinutes": 10,
+      "MaxPdfCacheBytes": 52428800
+    }
+  },
+   "DocumentEditor": {
+    "Enabled": true,
+    "Provider": "ONLYOFFICE",
+    "PublicBaseUrl": "http://host.docker.internal:5194",
+    "MaxFileMb": 100,
+    "OnlyOffice": {
+      "Enabled": true,
+      "BaseUrl": "http://127.0.0.1:8080",
+      "JwtSecret": "my_long_jwt_secret_at_least_32_chars",
+      "AutomationApiEnabled": false
+    },
+    "Spire": {
+      "Enabled": false,
+      "BaseUrl": "",
+      "AllowedDownloadOrigins": []
+    }
+  },
+ 
+  
+  "ConnectionStrings": {
+    "Redis": "localhost:6379,abortConnect=false"
+  },
+  "Integration": {
+    "External": {
+      "PublicBaseUrl": "http://localhost:5194"
+    }
+  },
+  "EnvironmentOverrides": {
+    "Development": {
+      "DocumentEditor": {
+        "AllowHttpForDevelopment": true
+      }
+    }
+  },
+  "Infrastructure": {
+    "office.wopi.allowInsecureEditorTls": "false",
+    "office.wopi.lockMinutes": "30",
+    "rendition.libreOfficePath": "",
+    "rendition.provider": "EUROOFFICE",
+    "rendition.collaboraUrl": "http://127.0.0.1:8080"
+  },
+
+
+  "ai": {
+    "ocr": {
+      "enabled": "true",
+      "apiKey": "9452CC2BDC83CF0C9249BAF8FC113712CE416E7C04E087EBC5DF4C6E73ED1F9D",
+      "endpoint": "http://localhost:8091",
+      "timeoutSeconds": "120",
+      "languages": "eng",
+      "command": "tesseract"
+    },
+    "embeddings": {
+      "model": "text-embedding-3-small",
+      "endpoint": "https://api.openai.com/v1/embeddings",
+      "enabled": false,
+      "batchSize": "8",
+      "timeoutSeconds": "120",
+      "provider": "OPENAI"
+    },
+    "providers": {
+      "ollama": {
+        "model": "qwen2.5:1.5b",
+        "endpoint": "http://127.0.0.1:11434/api/chat",
+        "contextTokens": "16384",
+        "apiKey": ""
+      },
+      "openai": {
+        "apiKey": "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",
+        "model": "gpt-4.1-mini",
+        "responseFormat": "JSON_SCHEMA",
+        "endpoint": "https://api.openai.com/v1/chat/completions"
+      },
+      "local": {
+        "responseFormat": "JSON_SCHEMA",
+        "apiKey": "",
+        "model": "",
+        "endpoint": "http://localhost:1234/v1/chat/completions"
+      },
+      "deepseek": {
+        "responseFormat": "JSON_OBJECT",
+        "apiKey": "",
+        "model": "deepseek-flash",
+        "endpoint": "https://api.deepseek.com/chat/completions",
+        "thinkingMode": "disabled"
+      },
+      "openai_compatible": {
+        "model": "qwen2.5:1.5b",
+        "endpoint": "http://127.0.0.1:11434/api/generate",
+        "apiKey": ""
+      }
+    },
+    "review": {
+      "provider": "OPENAI",
+      "maxCharacters": "18000",
+      "modelEnabled": true,
+      "maxBatches": "150",
+      "maxOutputTokens": 4000,
+      "timeoutSeconds": 180
+    },
+    "trends": {
+      "enabled": "true"
+    },
+    "complianceAssistant": {
+      "enabled": true
+    },
+    "autoIndex": {
+      "enabled": "true",
+      "batchSize": "2"
+    },
+    "search": {
+      "semanticEnabled": "true",
+      "snippetLength": "240",
+      "minRelevance": "0",
+      "rankByRelevance": "true"
+    },
+    "rag": {
+      "candidateLimit": "2000",
+      "maxContextCharacters": "15000",
+      "topK": "5",
+      "chunkCharacters": "3000",
+      "includeEffectiveDocuments": "true",
+      "enabled": true
+    }
+  }
+}

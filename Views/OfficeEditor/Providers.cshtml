@@ -1,0 +1,5 @@
+@model List<DMS.Web.Services.DocumentEditor.EditorHealthRow>
+@{ ViewData["PageTitle"]="Document editor diagnostics"; }
+<h2>Document editor diagnostics</h2><p>These checks run from DMS. Also test the browser → editor and editor → DMS connections.</p>
+<table class="table"><thead><tr><th>Check</th><th>Status</th><th>Detail</th></tr></thead><tbody>@foreach(var item in Model){<tr><td>@item.Check</td><td>@item.Status</td><td>@item.Detail</td></tr>}</tbody></table>
+<a href="/OfficeEditor">Collabora WOPI preflight</a>

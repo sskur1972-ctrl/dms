@@ -1,0 +1,64 @@
+@using DMS.Model.Documents
+@model ObsoleteForm
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["PageTitle"] = "Mark obsolete";
+    ViewData["Section"] = "Documents";
+    var d = (DocumentDetail)ViewBag.document;
+    string Pretty(string c) => c[..1] + c[1..].ToLowerInvariant().Replace('_', ' ');
+}
+<partial name="_AdminPageTitle" />
+
+<div class="row">
+    <div class="col-xl-8">
+        <div class="card border-danger">
+            <div class="card-header"><h4 class="card-title mb-0">@d.document_number · @d.title</h4></div>
+            <div class="alert alert-danger py-2 m-3 mb-0 small">
+                The document is withdrawn from use: it can no longer be printed, and every copy shows <strong>OBSOLETE COPY</strong>.
+                The record, its revisions and signatures are kept. This cannot be undone.
+            </div>
+            <div class="card-body">
+                <form asp-action="Obsolete" method="post" class="row g-3" autocomplete="off" onsubmit="this.querySelector('button[type=submit]').disabled = true;">
+                    <div asp-validation-summary="All" class="text-danger"></div>
+                    <input type="hidden" asp-for="DocumentId" />
+                    <input type="hidden" asp-for="ExpectedRowVersion" />
+                    <div class="col-md-6">
+                        <label asp-for="ReasonCode" class="form-label"></label> <span class="text-danger">*</span>
+                        <select asp-for="ReasonCode" class="form-select">
+                            <option value="">Select…</option>
+                            @foreach (var c in ObsoleteForm.ReasonCodes) { <option value="@c">@Pretty(c)</option> }
+                        </select>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="ObsoleteOn" class="form-label"></label>
+                        <input asp-for="ObsoleteOn" type="date" class="form-control" />
+                    </div>
+                    <div class="col-12">
+                        <label asp-for="Remarks" class="form-label"></label> <span class="text-danger">*</span>
+                        <textarea asp-for="Remarks" class="form-control" rows="3"></textarea>
+                    </div>
+                    <div class="col-12 form-check ms-2">
+                        <input asp-for="ArchiveImmediately" class="form-check-input" />
+                        <label asp-for="ArchiveImmediately" class="form-check-label"></label>
+                        <div class="form-text">Moves it straight to the archive (retention only). Needs the permission "Archive document".</div>
+                    </div>
+                    <fieldset class="col-12 border rounded p-3">
+                        <legend class="float-none w-auto px-2 fs-6 mb-0">Electronic signature - Obsoleted by</legend>
+                        <div class="row g-2">
+                            <div class="col-md-6"><label class="form-label" for="su">User ID</label><input id="su" name="SignatureUserName" class="form-control" value="@(Model.SignatureUserName ?? ViewBag.userName)" /></div>
+                            <div class="col-md-6"><label class="form-label" for="sp">Password</label><input id="sp" name="SignaturePassword" type="password" class="form-control" required autocomplete="new-password" /></div>
+                        </div>
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="checkbox" id="ack" name="MeaningAcknowledged" value="true" required />
+                            <label class="form-check-label small" for="ack">I confirm that I am applying my electronic signature with the meaning "Obsoleted by", and that it is the legally binding equivalent of my handwritten signature.</label>
+                        </div>
+                    </fieldset>
+                    <div class="col-12 d-flex gap-2">
+                        <button type="submit" class="btn btn-danger">Sign and mark obsolete</button>
+                        <a class="btn btn-light" asp-action="Details" asp-route-id="@d.id">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

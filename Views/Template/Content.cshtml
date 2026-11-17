@@ -1,0 +1,85 @@
+@using DMS.Model.Documents
+@using DMS.Web.Services.Authoring
+@model TemplateContentRow
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["PageTitle"] = $"{Model.name} v{Model.template_version} - template body";
+    string pageSetupJson = ViewBag.pageSetupJson as string ?? "";
+    int maxImageBytes = ViewBag.maxImageBytes is int m ? m : 2097152;
+    var mode = Model.authoring_mode ?? "EDITOR";
+}
+@* The same editor authors use, pointed at a template. *@
+<link rel="stylesheet" href="~/css/dms-editor.css" asp-append-version="true" />
+<partial name="_AdminPageTitle" />
+
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2">
+    <div>
+        <div class="h5 mb-1">@Model.name <span class="text-muted">v@Model.template_version</span></div>
+        <div class="text-muted">Standard body and page setup for @Model.document_type_code documents</div>
+    </div>
+    <a class="btn btn-sm btn-outline-secondary" asp-action="Index">Back to templates</a>
+</div>
+
+@Html.AntiForgeryToken()
+
+<div class="dms-note">
+    <span>
+        Lay out the sections every document of this type must have - purpose, scope, responsibility, procedure, references,
+        revision history - and set the page size, margins, header and footer your documentation standard requires. Every new
+        document of this type started "in the application" begins with all of it. Changing this template later does
+        <strong>not</strong> alter documents already created from it.
+    </span>
+</div>
+
+<div class="dms-editor" data-dms-editor
+     data-template-id="@Model.id"
+     data-save-url="@Url.Action("SaveContent")"
+     data-autosave-seconds="0"
+     data-max-image-bytes="@maxImageBytes"
+     data-header-footer="1"
+     data-page-setup="@pageSetupJson"
+     data-read-only="0">
+
+    <partial name="_EditorRibbon" model="@(new EditorRibbonViewModel { IsTemplate = true, HeaderFooterEnabled = true })" />
+
+    <div class="dms-editor-dialog">
+        <label>Offer this template as
+            <select data-dms-editor-mode>
+                <option value="EDITOR" selected="@(mode == "EDITOR")">Editor only</option>
+                @if (Model.has_file)
+                {
+                    <option value="BOTH" selected="@(mode == "BOTH")">Editor and file</option>
+                    <option value="FILE" selected="@(mode == "FILE")">File only</option>
+                }
+            </select>
+        </label>
+        <span class="dms-help mb-0" style="max-width:520px">
+            <strong>Editor</strong> opens these sections in the document editor. <strong>File</strong> copies the uploaded template
+            file as the document's starting content, for templates filled in outside the application and uploaded back.
+        </span>
+    </div>
+
+    <div class="dms-editor-body">
+        <aside class="dms-nav" data-dms-nav hidden aria-label="Template navigation">
+            <div class="dms-nav-title">Navigation</div>
+            <div class="dms-nav-list" data-dms-nav-list></div>
+        </aside>
+        <div class="dms-editor-canvas" data-dms-canvas>
+            <div class="dms-page-stack">
+                <div class="dms-pages" data-dms-pages aria-hidden="true"></div>
+                <div class="dms-editor-surface" data-dms-editor-surface spellcheck="true"
+                     role="textbox" aria-multiline="true" aria-label="Template body">@Html.Raw(Model.content_html)</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="dms-editor-footer">
+        <span class="dms-editor-status" data-dms-editor-status>Ready</span>
+        <span class="dms-editor-meta"><span data-dms-page-count></span><span data-dms-editor-count></span></span>
+    </div>
+    <input type="file" class="d-none" data-dms-editor-image-input accept="image/png,image/jpeg,image/gif,image/webp" />
+</div>
+
+@section Scripts {
+    <script src="~/js/dms-editor.js" asp-append-version="true"></script>
+}

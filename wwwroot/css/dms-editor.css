@@ -1,0 +1,968 @@
+/* In-application document editor - ported from Bcl.Dms wwwroot/css/dms-editor.css.
+   DMS_V2: the colour tokens the old site.css provided are defined here, so the editor works on the V2 theme. */
+:root {
+    --dms-border: #d8dee8;
+    --dms-accent: #405189;
+    --dms-accent-hover: #364574;
+    --dms-accent-soft: #e2e5f1;
+    --dms-text: #212529;
+    --dms-text-2: #495057;
+    --dms-text-3: #6c757d;
+    --dms-text-muted: #878a99;
+    --dms-muted: #878a99;
+    --dms-surface: #ffffff;
+    --dms-surface-2: #f8f9fb;
+    --dms-surface-3: #eef1f6;
+}
+.dms-note { display: flex; gap: .5rem; padding: .6rem .9rem; border-radius: 8px; background: #eef4ff; border: 1px solid #cfe0ff; margin-bottom: .75rem; font-size: 14px; }
+.dms-note-warn { background: #fff8e6; border-color: #ffe2a6; }
+.dms-help { color: #6c757d; font-size: 13px; }
+.dms-mono { font-family: SFMono-Regular, Consolas, "Liberation Mono", monospace; }
+.dms-compose-bar { display: flex; align-items: center; gap: .5rem; flex-wrap: wrap; margin-bottom: .5rem; }
+.dms-compose-title { font-weight: 600; max-width: 48ch; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+/*
+ * dms-editor.css - the in-application document editor (URS-7.1).
+ *
+ * THE ONE RULE THIS FILE EXISTS TO KEEP
+ * -------------------------------------
+ * What the author sees here must be what the exported .docx contains. Every
+ * measurement below is derived from the same twips the writer puts in
+ * `w:sectPr`, and every style that has a visual effect has a counterpart in
+ * `DocxPackageParts.Styles`. Where the two could drift, the drift is a defect,
+ * not a tolerance - the customer found one such defect and it is the reason
+ * this comment is here.
+ *
+ * A twip is 1/1440 inch; a CSS pixel is 1/96 inch; so a twip is exactly 1/15 px.
+ * The JavaScript does that conversion, sets the page box and the margins
+ * inline, and this file styles what sits inside them.
+ */
+
+/* ============================================================ shell */
+
+/* A `hidden` attribute must win over any display this file sets.
+ *
+ * Found by driving the editor in a browser: every ribbon panel and every dialog
+ * rendered at once, because `display: flex` on the class beats the user agent's
+ * `[hidden] { display: none }`. Specificity, not the attribute, decides - so the
+ * attribute has to be restated at higher specificity, once, here. */
+.dms-editor [hidden],
+.dms-editor-dialog[hidden],
+.dms-symbol-palette[hidden],
+.dms-editor-find[hidden] {
+    display: none !important;
+}
+
+/* The page geometry is set in pixels from the document's own twips. Without
+ * border-box the padding that represents the margins would be ADDED to the page
+ * width, and every table would run off the right-hand edge of the sheet. */
+.dms-editor,
+.dms-editor *,
+.dms-editor *::before,
+.dms-editor *::after {
+    box-sizing: border-box;
+}
+
+/* The editor is a fixed-height shell so that ONLY the page canvas scrolls.
+ *
+ * Without a definite height the flex child cannot scroll: the editor grows to
+ * fit its content, the browser window becomes the scroller, and the ribbon
+ * travels up and off the screen with the pages. Word's ribbon does not move,
+ * and neither does this one. The height is refined at run time from the
+ * editor's real position in the viewport - see setShellHeight() - and this is
+ * the value it starts from. */
+.dms-editor {
+    position: relative;   /* the picture resize overlay is positioned against it */
+    display: flex;
+    flex-direction: column;
+    /* Was 78vh. The explanatory paragraphs are out of the ribbon and the page
+       header is one row instead of three, so the shell can have that height
+       back - it goes to the page the author is writing on, which is the only
+       thing on this screen that needed it. setShellHeight() refines it from
+       the editor's real position at run time; this is the starting value. */
+    height: 86vh;
+    min-height: 460px;
+    border: 1px solid var(--dms-border);
+    border-radius: 10px;
+    background: var(--dms-surface);
+    overflow: hidden;
+}
+
+/* ============================================================ ribbon */
+
+.dms-ribbon {
+    position: sticky;
+    top: 0;
+    z-index: 6;
+    flex: 0 0 auto;
+    background: var(--dms-surface-2);
+    border-bottom: 1px solid var(--dms-border);
+}
+
+.dms-ribbon-tabs {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 1px;
+    padding: 0 8px;
+    border-bottom: 1px solid var(--dms-border);
+}
+
+.dms-ribbon-tabs button {
+    padding: 7px 14px;
+    border: 0;
+    border-bottom: 2px solid transparent;
+    background: transparent;
+    color: var(--dms-text-2);
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+}
+
+.dms-ribbon-tabs button:hover { color: var(--dms-text); }
+
+.dms-ribbon-tabs button.is-active {
+    color: var(--dms-accent);
+    border-bottom-color: var(--dms-accent);
+    font-weight: 600;
+}
+
+/* The contextual table tabs are tinted, as Word's are, so it is obvious they
+   belong to the thing the caret is in rather than to the document. */
+.dms-ribbon-tabs button[data-dms-contextual] {
+    color: #7A4A00;
+    background: #FFF6E6;
+    border-radius: 4px 4px 0 0;
+}
+
+.dms-ribbon-tabs button[data-dms-contextual].is-active {
+    color: #7A4A00;
+    border-bottom-color: #C9821A;
+}
+
+.dms-ribbon-panel {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 0;
+    padding: 5px 8px;
+    /* No min-height. It was 56px to stop the ribbon jumping between tabs, but a
+       tab with one row of controls then reserved space for two - and with the
+       explainer paragraphs gone, several tabs are one row. */
+}
+
+/* A ribbon group: controls that belong together, with the group's name under
+   them. The label is what makes a dense toolbar learnable. */
+.dms-ribbon-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    padding: 0 10px;
+    border-right: 1px solid var(--dms-border);
+}
+
+.dms-ribbon-group:last-child { border-right: 0; }
+
+.dms-ribbon-row {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 3px;
+}
+
+.dms-ribbon-label {
+    font-size: 10.5px;
+    letter-spacing: .03em;
+    text-transform: uppercase;
+    color: var(--dms-text-3);
+    text-align: center;
+}
+
+.dms-ribbon button {
+    min-width: 30px;
+    height: 28px;
+    padding: 0 8px;
+    border: 1px solid transparent;
+    border-radius: 6px;
+    background: transparent;
+    color: var(--dms-text);
+    font-size: 13px;
+    line-height: 1;
+    cursor: pointer;
+    white-space: nowrap;
+}
+
+.dms-ribbon button:hover:not(:disabled) {
+    background: var(--dms-surface-3);
+    border-color: var(--dms-border);
+}
+
+.dms-ribbon button:disabled { opacity: .5; cursor: default; }
+
+/* The pressed state has to be visible at a glance: an author who cannot tell
+   whether bold is on will apply it twice and turn it off. */
+.dms-ribbon button.is-active {
+    background: var(--dms-accent-soft);
+    border-color: var(--dms-accent);
+    color: var(--dms-accent-hover);
+    font-weight: 600;
+}
+
+.dms-ribbon select {
+    height: 28px;
+    max-width: 160px;
+    padding: 0 6px;
+    border: 1px solid var(--dms-border);
+    border-radius: 6px;
+    background: var(--dms-surface);
+    color: var(--dms-text);
+    font-size: 12.5px;
+}
+
+.dms-ribbon input[type="color"] {
+    width: 30px;
+    height: 28px;
+    padding: 2px;
+    border: 1px solid var(--dms-border);
+    border-radius: 6px;
+    background: var(--dms-surface);
+    cursor: pointer;
+}
+
+/* A read-only session disables the ribbon rather than ignoring it. Greying the
+   dropdowns and colour pickers as well as the buttons is the point: a control
+   that looks live and does nothing reads as a defect, not as an access right. */
+.dms-ribbon select:disabled,
+.dms-ribbon input[type="color"]:disabled {
+    opacity: .5;
+    cursor: default;
+    background: var(--dms-surface-2);
+}
+
+.dms-ribbon .dms-editor-primary {
+    background: var(--dms-accent);
+    border-color: var(--dms-accent);
+    color: #fff;
+    font-weight: 600;
+    padding: 0 14px;
+}
+
+.dms-ribbon .dms-editor-primary:hover:not(:disabled) {
+    background: var(--dms-accent-hover);
+    border-color: var(--dms-accent-hover);
+    color: #fff;
+}
+
+/* ============================================================ dialogs */
+
+.dms-editor-dialog {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    gap: 12px;
+    padding: 12px 16px;
+    background: var(--dms-surface-3);
+    border-bottom: 1px solid var(--dms-border);
+    font-size: 13px;
+}
+
+.dms-editor-dialog label {
+    display: flex;
+    flex-direction: column;
+    gap: 3px;
+    font-size: 11.5px;
+    color: var(--dms-text-2);
+}
+
+.dms-editor-dialog input[type="text"],
+.dms-editor-dialog input[type="number"],
+.dms-editor-dialog select {
+    height: 30px;
+    min-width: 88px;
+    padding: 0 8px;
+    border: 1px solid var(--dms-border);
+    border-radius: 6px;
+    background: var(--dms-surface);
+    color: var(--dms-text);
+}
+
+/* ---------------------------------------------------------------- pictures */
+
+.dms-editor .dms-ribbon-field {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--dms-muted);
+}
+
+.dms-editor .dms-ribbon-field input[type="number"] { width: 68px; }
+.dms-editor .dms-ribbon-field input[type="text"] { width: 200px; }
+
+.dms-editor .dms-ribbon-check {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    font-size: 11px;
+    color: var(--dms-muted);
+}
+
+/* The selected picture. An outline rather than a border, so selecting a
+   picture does not change how much room it takes and therefore does not
+   re-paginate the document just for being clicked on. */
+.dms-editor img.is-selected {
+    outline: 2px solid var(--dms-accent);
+    outline-offset: 1px;
+}
+
+.dms-img-handles {
+    position: absolute;
+    z-index: 30;
+    pointer-events: none;   /* only the grip is interactive */
+}
+
+.dms-img-grip {
+    position: absolute;
+    right: -6px;
+    bottom: -6px;
+    width: 12px;
+    height: 12px;
+    border: 1px solid #fff;
+    border-radius: 2px;
+    background: var(--dms-accent);
+    box-shadow: 0 1px 3px rgba(0, 0, 0, .35);
+    cursor: nwse-resize;
+    pointer-events: auto;
+}
+
+/* The off-screen copy of the running bands used to measure their height. */
+.dms-page-probe {
+    visibility: hidden;
+    pointer-events: none;
+}
+
+.dms-symbol-palette {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 2px;
+    max-width: 420px;
+    padding: 8px 16px;
+    background: var(--dms-surface-3);
+    border-bottom: 1px solid var(--dms-border);
+}
+
+.dms-symbol-palette button {
+    width: 30px;
+    height: 28px;
+    border: 1px solid var(--dms-border);
+    border-radius: 5px;
+    background: var(--dms-surface);
+    font-size: 14px;
+    cursor: pointer;
+}
+
+.dms-symbol-palette button:hover { background: var(--dms-accent-soft); }
+
+/* ============================================================ find */
+
+.dms-editor-find {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: var(--dms-surface-3);
+    border-bottom: 1px solid var(--dms-border);
+    font-size: 13px;
+}
+
+.dms-editor-find input[type="text"] {
+    height: 30px;
+    min-width: 180px;
+    padding: 0 8px;
+    border: 1px solid var(--dms-border);
+    border-radius: 6px;
+}
+
+.dms-editor-find-result { color: var(--dms-text-2); }
+
+/* ============================================================ pages
+ *
+ * The sheets are drawn BEHIND one continuous editable flow. Splitting the
+ * document into an editable element per page would give crisper pages and would
+ * break every selection, paste and undo that crossed a page boundary - the
+ * operations authors use constantly. The flow is pushed past the gaps by
+ * spacers that are not part of the document.
+ */
+
+.dms-editor-canvas {
+    flex: 1 1 auto;
+    padding: 26px 12px 64px;
+    background: #9AA3B2;
+    overflow: auto;
+}
+
+/* The row between the ribbon and the status bar: navigation pane and canvas.
+   min-height:0 is what lets the canvas scroll instead of stretching the row. */
+.dms-editor-body {
+    display: flex;
+    flex: 1 1 auto;
+    min-height: 0;
+}
+
+/* -------------------------------------------------- reviewers' comments pane
+   Item 4: the findings beside the document being corrected, so the author does
+   not work from memory or from a second browser tab.
+
+   Inside dms-editor-body, so it scrolls independently exactly as the navigation
+   pane does and the ribbon and status bar stay put. Its own scroll container,
+   because a long comment thread must not stretch the row and stop the canvas
+   scrolling. */
+.dms-editor-comments {
+    flex: 0 0 360px;
+    min-width: 0;
+    border-left: 1px solid var(--dms-border);
+    background: var(--dms-surface-2);
+    overflow-y: auto;
+    overscroll-behavior: contain;
+    padding: 8px;
+}
+
+/* The panel inside is a card built for a page, not for a 360px column. */
+.dms-editor-comments .dms-card { margin: 0; box-shadow: none; }
+
+/* The compose box sticks to the top of THIS scroll container - the editor has
+   no page-level topbar in the way, so the offset is zero here. */
+.dms-editor-comments .dms-compose { top: 0; }
+
+/* Below 1400px the pane would leave the page too narrow to write on, so it is
+   hidden and the toggle is what brings it back. An author on a laptop chooses
+   between the document and the findings rather than getting a squeezed pair of
+   both. */
+@media (max-width: 1399.98px) {
+    .dms-editor-comments { display: none; }
+    .dms-editor-comments.is-open { display: block; flex-basis: 320px; }
+}
+
+/* The toggle's own state, at any width. */
+.dms-editor-comments.is-collapsed { display: none; }
+
+/* ---------------------------------------------------------- navigation pane */
+
+.dms-nav {
+    flex: 0 0 232px;
+    display: flex;
+    flex-direction: column;
+    border-right: 1px solid var(--dms-border);
+    background: var(--dms-surface-2);
+    overflow-y: auto;
+}
+
+.dms-nav-title {
+    padding: 9px 12px;
+    border-bottom: 1px solid var(--dms-border);
+    font-size: 11px;
+    letter-spacing: .06em;
+    text-transform: uppercase;
+    color: var(--dms-text-3);
+}
+
+.dms-nav-list { padding: 6px 4px 14px; }
+
+.dms-nav-empty {
+    margin: 0;
+    padding: 8px 10px;
+    font-size: 12px;
+    color: var(--dms-text-3);
+}
+
+.dms-nav-item {
+    display: block;
+    width: 100%;
+    padding: 5px 8px;
+    border: 0;
+    border-radius: 5px;
+    background: transparent;
+    color: var(--dms-text);
+    font-size: 12.5px;
+    line-height: 1.3;
+    text-align: left;
+    cursor: pointer;
+
+    /* One line per heading: an outline whose entries wrap is not an outline. */
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.dms-nav-item:hover { background: var(--dms-surface-3); }
+.dms-nav-item.is-l1 { font-weight: 600; }
+.dms-nav-item.is-l2 { padding-left: 20px; }
+.dms-nav-item.is-l3 { padding-left: 32px; color: var(--dms-text-2); }
+.dms-nav-item.is-l4 { padding-left: 44px; color: var(--dms-text-2); }
+
+@media (max-width: 900px) {
+    .dms-nav { flex-basis: 180px; }
+}
+
+/* Dragging a cell border. The cursor has to be forced onto the descendants
+   too, or the text cursor inside the cell wins and the border looks dead. */
+.dms-editor-canvas.is-col-resize,
+.dms-editor-canvas.is-col-resize * { cursor: col-resize !important; }
+
+.dms-editor-canvas.is-row-resize,
+.dms-editor-canvas.is-row-resize * { cursor: row-resize !important; }
+
+.dms-page-stack {
+    position: relative;
+    width: max-content;
+    margin: 0 auto;
+}
+
+.dms-pages {
+    position: relative;
+    margin: 0 auto;
+}
+
+.dms-page {
+    position: absolute;
+    left: 0;
+    right: 0;
+    background: #fff;
+    box-shadow: 0 1px 6px rgba(0, 0, 0, .28);
+}
+
+/* Page furniture: the margins and the inter-sheet gap, drawn OVER the editable
+ * flow so body text can never be seen where paper has none.
+ *
+ * Pagination should keep text out of the margins, but a page view whose margins
+ * can be trespassed on does not look like a page - and the defect the customer
+ * reported was text running through a footer, across a gap and into the next
+ * page's header. Masking is the guarantee; pagination is the correctness. Both.
+ *
+ * pointer-events: none throughout, or the mask would swallow clicks meant for
+ * the text underneath and the caret could not be placed near a page edge. */
+.dms-page-furniture {
+    position: absolute;
+    inset: 0;
+    z-index: 2;
+    pointer-events: none;
+}
+
+.dms-page-mask {
+    position: absolute;
+    left: 0;
+    right: 0;
+}
+
+.dms-page-mask.is-paper { background: #fff; }
+
+/* The gap shows the canvas, and the sheets' own shadows sit under it. */
+.dms-page-mask.is-gap { background: #9AA3B2; }
+
+.dms-page-label {
+    position: absolute;
+    right: 2px;
+    font-size: 10.5px;
+    color: rgba(255, 255, 255, .85);
+    letter-spacing: .04em;
+}
+
+/* Running header and footer. Drawn on the page rather than inside the flow,
+   because a header that lived in the flow would be one editable copy per page
+   and keeping ten of them in step while the author types in one is exactly how
+   pages come to disagree. */
+.dms-page-running {
+    position: absolute;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+    font-size: 9pt;
+    color: #444;
+    background: #fff;
+    pointer-events: none;
+}
+
+.dms-page-running.is-header { border-bottom: 1px solid #D8DEE8; padding-bottom: 3px; }
+.dms-page-running.is-footer { border-top: 1px solid #D8DEE8; padding-top: 3px; }
+
+/* A picture in a header or footer - a site logo, almost always - must not be
+   able to grow past the text width and push the furniture out of the margin. */
+.dms-page-running img { max-width: 100%; height: auto; }
+.dms-page-running p { margin: 0; }
+
+.dms-page-number {
+    position: absolute;
+    background: #fff;
+    font-size: 9pt;
+    color: #444;
+    pointer-events: none;
+    font-variant-numeric: tabular-nums;
+}
+
+/* ---- editing a header or footer on the page ------------------------------
+ *
+ * The live band is the ONE editable copy. It lives in a layer of its own that
+ * redraws never rebuild, because moving a contenteditable element in the DOM
+ * loses the caret - so repagination only ever changes its `top`.
+ */
+.dms-page-live {
+    position: absolute;
+    inset: 0;
+    z-index: 3;
+    pointer-events: none;   /* only the band itself is interactive */
+}
+
+.dms-page-live-band {
+    min-height: 20px;
+    padding: 2px 3px;
+    outline: 1px dashed var(--dms-accent);
+    outline-offset: 2px;
+    pointer-events: auto;
+    cursor: text;
+}
+
+.dms-page-live-band:focus-visible { outline-style: solid; }
+
+/* A preview of the band on the pages that are not being edited. Word marks
+   them as inactive by greying them; the affordance matters, because an author
+   who cannot tell which copy they are typing in will type in the wrong one. */
+.dms-editor.is-hf-editing .dms-page-running:not(.dms-page-live-band) { color: #9AA3B2; }
+
+/* The body while a header or footer is open: visible, dimmed, and not
+   editable - exactly as Word treats it. Two live editable regions on screen at
+   once is how an author ends up typing a header into a paragraph. */
+.dms-editor-surface.is-hf-editing { color: #9AA3B2; }
+.dms-editor-surface.is-hf-editing * { color: inherit !important; }
+
+.dms-hf-where {
+    font-family: ui-monospace, Consolas, monospace;
+    font-size: 11px;
+    color: var(--dms-accent);
+    background: var(--dms-accent-soft, #EAF0FE);
+    border-radius: 4px;
+    padding: 3px 7px;
+}
+
+/* ============================================================ surface */
+
+.dms-editor-surface {
+    position: absolute;
+    top: 0;
+    left: 0;
+    z-index: 1;
+    background: transparent;
+    color: #1a1a1a;
+    font-family: Calibri, Carlito, "Segoe UI", sans-serif;
+    font-size: 11pt;
+    line-height: 1.29;
+    outline: none;
+}
+
+/* Style sets mirror DocxPackageParts.StyleSet, so choosing one in the ribbon
+   changes the screen and the exported file together. */
+.dms-editor-surface[data-style-set="CLASSIC"] { font-family: Cambria, "Times New Roman", serif; }
+.dms-editor-surface[data-style-set="COMPACT"] { font-family: Arial, Helvetica, sans-serif; font-size: 10pt; }
+
+.dms-editor-surface:focus-visible { outline: none; }
+
+.dms-editor-surface p { margin: 0 0 6pt; }
+
+.dms-editor-surface h1,
+.dms-editor-surface h2,
+.dms-editor-surface h3,
+.dms-editor-surface h4 {
+    color: #1F3864;
+    font-weight: 700;
+    margin: 18pt 0 6pt;
+    line-height: 1.2;
+}
+
+.dms-editor-surface[data-style-set="PLAIN"] h1,
+.dms-editor-surface[data-style-set="PLAIN"] h2,
+.dms-editor-surface[data-style-set="PLAIN"] h3,
+.dms-editor-surface[data-style-set="PLAIN"] h4 { color: #000; }
+
+.dms-editor-surface h1 { font-size: 16pt; }
+.dms-editor-surface h2 { font-size: 14pt; }
+.dms-editor-surface h3 { font-size: 13pt; color: #2E4E7E; }
+.dms-editor-surface h4 { font-size: 11pt; color: #2E4E7E; }
+
+/* Named styles. Each is a class because the class maps to a real Word style in
+   the export - a document whose headings are "18pt bold navy" cannot be
+   restyled; one whose headings are Heading 1 can. */
+.dms-editor-surface .dms-doc-title {
+    font-size: 28pt;
+    font-weight: 700;
+    color: #1F3864;
+    margin: 0 0 4pt;
+}
+
+.dms-editor-surface .dms-doc-subtitle {
+    font-size: 14pt;
+    color: #595959;
+    margin: 0 0 16pt;
+}
+
+.dms-editor-surface .dms-doc-caption {
+    font-size: 9pt;
+    font-weight: 700;
+    color: #1F3864;
+    margin: 0 0 10pt;
+}
+
+.dms-editor-surface .dms-doc-nospacing { margin: 0; line-height: 1.15; }
+
+.dms-editor-surface blockquote,
+.dms-editor-surface .dms-doc-quote {
+    margin: 10pt 36pt;
+    padding-left: 12pt;
+    border-left: 3px solid #1F3864;
+    color: #404040;
+    font-style: italic;
+}
+
+.dms-editor-surface ul,
+.dms-editor-surface ol { margin: 0 0 6pt; padding-left: 36pt; }
+
+.dms-editor-surface li { margin: 0 0 2pt; }
+
+/* Legal multilevel numbering - 1, 1.1, 1.1.1 - which is how pharmaceutical
+   procedures number their clauses. Built with CSS counters so the screen shows
+   the same numbers the numbering definition produces in the file. */
+.dms-editor-surface ol.dms-doc-legal {
+    counter-reset: dms-legal;
+    list-style: none;
+    padding-left: 28pt;
+}
+
+.dms-editor-surface ol.dms-doc-legal > li {
+    counter-increment: dms-legal;
+    position: relative;
+}
+
+.dms-editor-surface ol.dms-doc-legal > li::before {
+    content: counters(dms-legal, ".") " ";
+    position: absolute;
+    left: -28pt;
+    width: 26pt;
+    font-variant-numeric: tabular-nums;
+}
+
+.dms-editor-surface table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 6pt 0 10pt;
+    table-layout: fixed;
+}
+
+.dms-editor-surface td,
+.dms-editor-surface th {
+    border: 1px solid #808080;
+    padding: 4pt 6pt;
+    vertical-align: top;
+    word-wrap: break-word;
+}
+
+.dms-editor-surface th {
+    background: #EEF2F7;
+    font-weight: 600;
+    text-align: left;
+}
+
+.dms-editor-surface table.dms-doc-borderless td,
+.dms-editor-surface table.dms-doc-borderless th { border-color: transparent; }
+
+.dms-editor-surface td > p:last-child,
+.dms-editor-surface th > p:last-child { margin-bottom: 0; }
+
+/* height:auto only where the author has NOT set one: a picture given an
+   explicit height must show at that height, because that is the height the
+   .docx writer puts in the file, and a screen that quietly re-derives it from
+   the width is a screen that disagrees with the export. */
+.dms-editor-surface img { max-width: 100%; }
+.dms-editor-surface img:not([height]) { height: auto; }
+
+
+/* Pasted content carries the source document's own widths - "width: 900px" from
+   a document laid out for a different page. Without this it runs past the right
+   margin and over the page edge. The .docx writer clamps table widths to the
+   text area for the same reason; this is the screen half of that rule. */
+.dms-editor-surface table,
+.dms-editor-surface div,
+.dms-editor-surface p,
+.dms-editor-surface pre,
+.dms-editor-surface blockquote {
+    max-width: 100%;
+}
+
+.dms-editor-surface hr {
+    border: 0;
+    border-top: 1px solid #808080;
+    margin: 10pt 0;
+}
+
+.dms-editor-surface a { color: #0563C1; text-decoration: underline; }
+
+/* The generated index (URS-7.36.2). Not editable, and it says so: the dashed
+   rule marks it as generated content so an author is not surprised that the
+   caret will not go into it. */
+.dms-editor-surface .dms-doc-toc {
+    padding: 6pt 0 8pt;
+    border-top: 1px dashed #7BA3F7;
+    border-bottom: 1px dashed #7BA3F7;
+    color: #1F3864;
+}
+
+.dms-editor-surface .dms-doc-toc-title {
+    margin: 0 0 6pt;
+    font-weight: 600;
+    font-size: 12.5pt;
+}
+
+/* The dot leader is drawn by a repeating gradient on the flexible middle,
+   which is how a leader behaves on paper: it fills whatever room is left
+   between the entry and its page number, at any width. */
+.dms-editor-surface .dms-doc-toc-entry {
+    display: flex;
+    align-items: baseline;
+    gap: 4px;
+    margin: 0 0 2pt;
+}
+
+.dms-editor-surface .dms-doc-toc-entry::after {
+    content: "";
+    flex: 1 1 auto;
+    order: 2;
+    margin-bottom: .25em;
+    border-bottom: 1px dotted currentColor;
+    opacity: .55;
+}
+
+.dms-editor-surface .dms-doc-toc-text { order: 1; }
+
+.dms-editor-surface .dms-doc-toc-page {
+    order: 3;
+    min-width: 1.6em;
+    text-align: right;
+    font-variant-numeric: tabular-nums;
+}
+
+.dms-editor-surface .dms-doc-toc-l2 { padding-left: 14pt; }
+.dms-editor-surface .dms-doc-toc-l3 { padding-left: 28pt; }
+.dms-editor-surface .dms-doc-toc-l4 { padding-left: 42pt; }
+
+/* An automatic section number. Deliberately not styled differently from the
+   heading it belongs to: it is part of the heading in the export, and a number
+   that looked like application chrome on screen and like text in the file
+   would be another way for the two to disagree. */
+.dms-editor-surface .dms-doc-autonum { user-select: none; }
+
+/* A page break is invisible in HTML and unmissable on paper, so the editor
+   draws it. An author who cannot see where the pages break cannot lay out a
+   form that has to fit on one. */
+.dms-editor-surface hr.dms-doc-pagebreak {
+    border: 0;
+    border-top: 2px dashed var(--dms-accent);
+    margin: 14pt 0;
+    position: relative;
+}
+
+.dms-editor-surface hr.dms-doc-pagebreak::after {
+    content: "Page break";
+    position: absolute;
+    top: -.72em;
+    left: 50%;
+    transform: translateX(-50%);
+    padding: 0 8px;
+    background: #fff;
+    color: var(--dms-accent);
+    font-size: 8pt;
+    letter-spacing: .04em;
+    text-transform: uppercase;
+}
+
+/* Formatting marks, as Word's ¶ toggle shows them. */
+.dms-editor-surface.show-marks p::after {
+    content: "¶";
+    color: #9AA3B2;
+    margin-left: 2px;
+}
+
+/* ---- pagination spacers -------------------------------------------------
+   Not part of the document: inserted to push a block past the gap between two
+   sheets, stripped before the body is sent to the server. */
+
+.dms-page-spacer {
+    display: block;
+    background: transparent;
+    border: 0;
+    margin: 0;
+    padding: 0;
+    -webkit-user-select: none;
+    user-select: none;
+}
+
+.dms-editor-surface tr.dms-page-spacer,
+.dms-editor-surface td.dms-page-spacer-cell {
+    border: 0 !important;
+    background: transparent !important;
+    padding: 0 !important;
+}
+
+/* ============================================================ footer */
+
+.dms-editor-footer {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    justify-content: space-between;
+    gap: 10px;
+    padding: 7px 14px;
+    background: var(--dms-surface-2);
+    border-top: 1px solid var(--dms-border);
+    font-size: 12.5px;
+    color: var(--dms-text-2);
+}
+
+.dms-editor-footer .dms-editor-meta {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+}
+
+.dms-editor-status.is-ok { color: #15803D; font-weight: 600; }
+.dms-editor-status.is-warn { color: #B45309; font-weight: 600; }
+.dms-editor-status.is-error { color: #B91C1C; font-weight: 600; }
+.dms-editor-status.is-busy { color: var(--dms-accent); font-weight: 600; }
+
+/* ============================================================ narrow screens
+ *
+ * Below the width of a sheet the page metaphor stops helping and starts costing
+ * the author half their text. The pages still exist - the geometry is the
+ * document's, not the screen's - they are just scrolled horizontally.
+ */
+
+@media (max-width: 900px) {
+    .dms-editor-canvas { padding: 12px 6px 40px; }
+    .dms-ribbon-group { padding: 0 6px; }
+    .dms-ribbon-label { display: none; }
+}
+
+/* ============================================================ compose header
+   One row above the ribbon, not three. Every millimetre here is taken from the
+   page the author is writing on, which is the whole point of the screen. */
+.dms-compose-bar {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    flex-wrap: wrap;
+    margin-bottom: 8px;
+    font-size: 14px;
+}
+
+.dms-compose-title {
+    color: var(--dms-text-muted, #5d6570);
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    max-width: 42ch;
+}

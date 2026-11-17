@@ -1,0 +1,26 @@
+/* Scope these rules: the site theme already includes Choices. */
+.dms-cc-picker { min-width: 0; }
+.dms-cc-picker .choices { width: 100%; margin-bottom: 0; direction: ltr; }
+.dms-cc-picker .choices[data-type*="select-one"] .choices__inner {
+    width: 100%; box-sizing: border-box; min-height: 38px;
+    padding: 7px 34px 7px 12px; border-radius: 4px; background: white;
+}
+.dms-cc-picker .choices[data-type*="select-one"]::after {
+    content: ""; font-family: inherit; left: auto; right: 12px; top: 50%;
+    width: 0; height: 0; margin: 0; transform: translateY(-50%);
+    border: 4px solid transparent; border-top-color: currentColor;
+}
+.dms-cc-picker .choices[data-type*="select-one"].is-open::after {
+    margin: 0; transform: translateY(-50%); border-color: transparent; border-bottom-color: currentColor; top: 50%;
+}
+.dms-cc-picker .choices__list--single { padding: 0; width: 100%; }
+.dms-cc-picker .choices__list--single .choices__item,
+.dms-cc-picker .choices__list--dropdown .choices__item {
+    white-space: normal; overflow-wrap: anywhere; word-break: normal;
+    text-align: left; padding-left: 12px; padding-right: 12px;
+}
+.dms-cc-picker .choices__list--single .choices__item { padding: 0; }
+.dms-cc-picker .choices__list--dropdown { box-sizing: border-box; width: 100%; z-index: 30; }
+.dms-cc-picker .choices__list--dropdown .choices__input {
+    width: calc(100% - 16px); box-sizing: border-box; margin: 8px;
+}

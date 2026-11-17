@@ -1,0 +1,292 @@
+@using DMS.Model.Documents
+@using DMS.Web.Services.Export
+@using DMS.Model.Master
+@model ReportResult
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var report = (ReportDefinition)ViewBag.report;
+    var q = (ReportQuery)ViewBag.query;
+    ViewData["PageTitle"] = report.Title;
+    ViewData["Section"] = "Reports";
+    var departments = (List<DMS.Model.Account.DepartmentDropDownViewModel>)ViewBag.departments;
+    var types = (List<DMS.Model.Master.DocumentType>)ViewBag.types;
+    var states = (List<DMS.Model.Master.DocumentState>)ViewBag.states;
+    var docCol = Model.Columns.IndexOf("document_id");
+    var numberCol = Model.Columns.IndexOf("document_number");
+    var p = report.Params;
+    var route = new Dictionary<string, string?>
+    {
+        ["id"] = report.Code, ["From"] = q.From?.ToString("yyyy-MM-dd"), ["To"] = q.To?.ToString("yyyy-MM-dd"), ["DepartmentId"] = q.DepartmentId?.ToString(),
+        ["PlantId"] = q.PlantId?.ToString(),["PlantScope"] = q.PlantScope,["TypeId"] = q.TypeId?.ToString(), ["State"] = q.State, ["Days"] = q.Days?.ToString(),
+    ["Group"] = q.Group, ["User"] = q.User,["IncludeInactive"] = q.IncludeInactive ? "true" : null, ["IncludeObsolete"] = q.IncludeObsolete ? "true" : null
+    };
+    Dictionary<string, string?> With(string k, string v) => new(route) { [k] = v };
+}
+<partial name="_AdminPageTitle" />
+<style>@@media print { .dms-no-print, .app-menu, #page-topbar, .page-title-box, footer { display: none !important; } .main-content { margin: 0 !important; } .page-content { padding: 0 !important; } }</style>
+
+<div class="card">
+    <div class="card-header dms-no-print">
+        <form method="get" class="row g-2 align-items-end">
+            <input type="hidden" name="id" value="@report.Code" />
+            @if (p.HasFlag(ReportParams.Period))
+            {
+                <div class="col-auto"><label class="form-label small mb-0">From</label><input class="form-control form-control-sm" type="date" name="From" value="@q.From?.ToString("yyyy-MM-dd")" /></div>
+                <div class="col-auto"><label class="form-label small mb-0">To</label><input class="form-control form-control-sm" type="date" name="To" value="@q.To?.ToString("yyyy-MM-dd")" /></div>
+            }
+            @if (p.HasFlag(ReportParams.Group))
+            {
+                <div class="col-auto"><label class="form-label small mb-0">Per</label>
+                    <select class="form-select form-select-sm" name="Group"><option value="month" selected="@(q.Group != "week")">month</option><option value="week" selected="@(q.Group == "week")">week</option></select></div>
+            }
+            @if (p.HasFlag(ReportParams.Days))
+            {
+                <div class="col-auto"><label class="form-label small mb-0">Due within (days)</label><input class="form-control form-control-sm" type="number" min="0" max="3650" name="Days" value="@q.Days" /></div>
+            }
+            @if (p.HasFlag(ReportParams.Department))
+            {
+                <div class="col-auto"><label class="form-label small mb-0">Department</label>
+                    <select class="form-select form-select-sm" name="DepartmentId"><option value="">All</option>
+                        @foreach (var d in departments) { <option value="@d.id" selected="@(q.DepartmentId == d.id)">@d.DisplayText</option> }
+                    </select></div>
+            }
+
+
+            @if (p.HasFlag(ReportParams.PlantScope))
+            {
+                <div class="col-auto">
+                    <label class="form-label small mb-0">Plant / Global</label>
+                    <select class="form-select form-select-sm"
+                            name="PlantScope">
+                        <option value="ALL"
+                                selected="@(q.PlantScope == "ALL" || string.IsNullOrEmpty(q.PlantScope))">
+                            All
+                        </option>
+                        <option value="PLANT"
+                                selected="@(q.PlantScope == "PLANT")">
+                            Plant
+                        </option>
+                        <option value="GLOBAL"
+                                selected="@(q.PlantScope == "GLOBAL")">
+                            Global
+                        </option>
+                    </select>
+                </div>
+            }
+
+            @if (p.HasFlag(ReportParams.PlantScope) && q.PlantScope == "PLANT")
+            {
+                <div class="col-auto">
+                    <label class="form-label small mb-0">Plant</label>
+                    <select class="form-select form-select-sm" name="PlantId">
+                        <option value="">Select plant</option>
+                        @foreach (PlantDropdownViewModel plant in (IEnumerable<PlantDropdownViewModel>)ViewBag.plants)
+                        {
+                            <option value="@plant.Id" selected="@(q.PlantId == plant.Id)">
+                                @plant.Name
+                            </option>
+                        }
+                    </select>
+                </div>
+            }
+
+
+            @if (p.HasFlag(ReportParams.DocumentType))
+            {
+                <div class="col-auto"><label class="form-label small mb-0">Type</label>
+                    <select class="form-select form-select-sm" name="TypeId"><option value="">All</option>
+                        @foreach (var t in types) { <option value="@t.id" selected="@(q.TypeId == t.id)">@t.code</option> }
+                    </select></div>
+            }
+            @if (p.HasFlag(ReportParams.State))
+            {
+                <div class="col-auto"><label class="form-label small mb-0">State</label>
+                    <select class="form-select form-select-sm" name="State"><option value="">All</option>
+                        @foreach (var s in states) { <option value="@s.code" selected="@(q.State == s.code)">@s.name</option> }
+                    </select></div>
+            }
+            @if (p.HasFlag(ReportParams.User))
+            {
+                <div class="col-auto"><label class="form-label small mb-0">Signer</label><input class="form-control form-control-sm" name="User" value="@q.User" placeholder="user ID or name" /></div>
+            }
+            @if (p.HasFlag(ReportParams.IncludeObsolete))
+            {
+                <div class="col-auto form-check ms-2"><input class="form-check-input" type="checkbox" name="IncludeObsolete" value="true" id="io" checked="@q.IncludeObsolete" /><label class="form-check-label small" for="io">include obsolete</label></div>
+            }
+            @if (p.HasFlag(ReportParams.IncludeInactive))
+            {
+                <div class="col-auto form-check ms-2"><input class="form-check-input" type="checkbox" name="IncludeInactive" value="true" id="ii" checked="@q.IncludeInactive" /><label class="form-check-label small" for="ii">include inactive users</label></div>
+            }
+            @* <div class="col-auto"><button class="btn btn-sm btn-primary" type="submit">Run</button></div> *@
+            <div class="col-auto">
+                <button class="btn btn-sm btn-primary" type="submit">
+                    Run
+                </button>
+            </div>
+
+            <div class="col-auto">
+                <a asp-action="Run"
+                   asp-route-id="@report.Code"
+                   class="btn btn-sm btn-outline-secondary">
+                    <i class="ri-refresh-line"></i> Reset Filters
+                </a>
+            </div>
+            <div class="col d-flex justify-content-end gap-2">
+                @if (ViewBag.canPrint == true)
+                {
+                <button type="button" class="btn btn-sm btn-light" onclick="window.print()"><i class="ri-printer-line"></i> Print</button>
+                }
+                @if (ViewBag.canExport == true)
+                {
+                    
+                    <a class="btn btn-sm btn-soft-success" asp-action="Export" asp-all-route-data='@(With("format", "xlsx"))'><i class="ri-file-excel-2-line"></i> Excel</a>
+                    <a class="btn btn-sm btn-soft-secondary" asp-action="Export" asp-all-route-data='@(With("format", "csv"))'>CSV</a>
+                }
+                <a class="btn btn-sm btn-light" asp-action="Index">All reports</a>
+            </div>
+        </form>
+    </div>
+    <div class="card-body">
+        <h5 class="mb-1">@report.Title</h5>
+        <p class="small text-muted mb-2">@report.Description · @Model.Rows.Count rows@(Model.Truncated ? " - TRUNCATED (report.maxRows)" : "")
+            · run @DateTime.UtcNow.ToString("dd-MMM-yyyy HH:mm") UTC by @User.Identity?.Name</p>
+        <div class="table-responsive">
+            @if(report.Code=="TRENDS" && ViewBag.TrendEnabled==true){
+             var createdColumn=Model.Columns.IndexOf("created");var rejectedColumn=Model.Columns.IndexOf("rejected");var periodColumn=Model.Columns.IndexOf("period");
+             if(createdColumn>=0 && rejectedColumn>=0 && periodColumn>=0){
+              var history=new List<double>();var maximum=Math.Max(1,Model.Rows.Select(r=>Convert.ToDouble(r[createdColumn]??0)).DefaultIfEmpty().Max());
+              <div class="mb-3" aria-label="Created document activity trend">
+              @foreach(var trend in Model.Rows){var created=Convert.ToDouble(trend[createdColumn]??0);var rejected=Convert.ToDouble(trend[rejectedColumn]??0);var spike=DMS.Web.Services.Intelligence.TextIntelligence.IsSpike(history,rejected);history.Add(rejected);
+               <div class="d-flex gap-2 align-items-center mb-2"><span style="min-width:110px">@trend[periodColumn]</span><meter value="@created" max="@maximum" style="width:45%">@created</meter><span>@created created · @rejected rejected</span>@if(spike){<span class="badge bg-warning text-dark">Rejection increase</span>}</div>
+              }</div>
+             }
+            }
+            @* <table class="table table-sm table-bordered table-striped small mb-0"> *@
+
+            <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-2">
+                <div class="d-flex align-items-center gap-2">
+                    <label for="pageSize" class="small mb-0">Rows per page:</label>
+                    <select id="pageSize" class="form-select form-select-sm" style="width: auto;">
+                        <option value="10" selected>10</option>
+                        <option value="25">25</option>
+                        <option value="50">50</option>
+                        <option value="100">100</option>
+                    </select>
+                </div>
+
+                <span id="paginationInfo" class="small text-muted"></span>
+
+                <div class="d-flex gap-2">
+                    <button type="button" id="prevPage"
+                            class="btn btn-sm btn-outline-secondary">
+                        Previous
+                    </button>
+                    <button type="button" id="nextPage"
+                            class="btn btn-sm btn-outline-secondary">
+                        Next
+                    </button>
+                </div>
+            </div>
+
+            <table class="table table-sm table-bordered table-striped small mb-0">
+
+
+                <thead class="table-light"><tr>
+                    @for (var i = 0; i < Model.Columns.Count; i++) { if (i == docCol) { continue; } <th>@ReportCatalog.Heading(Model.Columns[i])</th> }
+                </tr></thead>
+                <tbody id="reportTableBody">
+                    @if (Model.Rows.Count == 0) { <tr><td colspan="@Model.Columns.Count" class="text-center text-muted py-3">No rows.</td></tr> }
+                    @foreach (var row in Model.Rows)
+                    {
+                        <tr>
+                            @for (var i = 0; i < row.Length; i++)
+                            {
+                                if (i == docCol) { continue; }
+                                if (i == numberCol && docCol >= 0 && row[docCol] != null)
+                                {
+                                    <td class="text-nowrap"><a asp-controller="Documents" asp-action="Details" asp-route-id="@row[docCol]">@row[i]</a></td>
+                                }
+                                else
+                                {
+                                    var text = TableExport.Text(row[i]);
+                                    <td class="@(row[i] is int or long or decimal or double ? "text-end" : "") @(text is "OVERDUE" or "Locked" ? "text-danger fw-semibold" : "")">@text</td>
+                                }
+                            }
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+
+<script>
+    document.addEventListener("DOMContentLoaded", function () {
+        const tbody = document.getElementById("reportTableBody");
+        const pageSizeSelect = document.getElementById("pageSize");
+        const paginationInfo = document.getElementById("paginationInfo");
+        const prevButton = document.getElementById("prevPage");
+        const nextButton = document.getElementById("nextPage");
+
+        if (!tbody || !pageSizeSelect || !paginationInfo ||
+            !prevButton || !nextButton) {
+            return;
+        }
+
+        // Exclude the "No rows" placeholder from pagination.
+        const rows = Array.from(tbody.querySelectorAll("tr"))
+            .filter(row => !row.querySelector("td[colspan]"));
+
+        let currentPage = 1;
+
+        function renderPage() {
+            const pageSize = Number(pageSizeSelect.value);
+            const totalRows = rows.length;
+            const totalPages = Math.max(1, Math.ceil(totalRows / pageSize));
+
+            currentPage = Math.min(currentPage, totalPages);
+
+            const start = (currentPage - 1) * pageSize;
+            const end = start + pageSize;
+
+            rows.forEach((row, index) => {
+                row.style.display =
+                    index >= start && index < end ? "" : "none";
+            });
+
+            paginationInfo.textContent = totalRows === 0
+                ? "Showing 0 rows"
+                : `Showing ${start + 1}-${Math.min(end, totalRows)} of ${totalRows} rows`;
+
+            prevButton.disabled = currentPage <= 1;
+            nextButton.disabled = currentPage >= totalPages;
+        }
+
+        pageSizeSelect.addEventListener("change", function () {
+            currentPage = 1;
+            renderPage();
+        });
+
+        prevButton.addEventListener("click", function () {
+            if (currentPage > 1) {
+                currentPage--;
+                renderPage();
+            }
+        });
+
+        nextButton.addEventListener("click", function () {
+            const totalPages = Math.max(
+                1,
+                Math.ceil(rows.length / Number(pageSizeSelect.value))
+            );
+
+            if (currentPage < totalPages) {
+                currentPage++;
+                renderPage();
+            }
+        });
+
+        renderPage();
+    });
+</script>

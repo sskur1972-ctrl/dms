@@ -1,0 +1,10 @@
+@model long
+@* Separate POST form: never nest inside the document save form or navigate away from unsaved edits. *@
+<form asp-controller="Intelligence" asp-action="Process" method="post" target="_blank" rel="noopener" class="d-inline-flex m-0">
+    <input type="hidden" name="versionId" value="@Model" />
+    <button type="submit" class="btn btn-sm btn-outline-secondary"
+            title="Save all document changes first. Reindex uses the saved file and opens results in a new tab."
+            aria-label="Reindex saved document; results open in a new tab">
+        <i class="ri-refresh-line me-1" aria-hidden="true"></i>Reindex saved document <span aria-hidden="true">↗</span>
+    </button>
+</form>

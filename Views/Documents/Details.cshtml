@@ -1,0 +1,439 @@
+@using DMS.Web.Services.Authoring
+@using DMS.Model.Documents
+@model DocumentDetailsViewModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var d = Model.Document;
+    var v = Model.CurrentVersion;
+    ViewData["PageTitle"] = d.document_number;
+    ViewData["Section"] = "Documents";
+    bool canEdit = ViewBag.canEdit == true;
+    bool fileMissing = ViewBag.fileMissing == true;
+    var attachmentTypes = ViewBag.attachmentTypes as string[] ?? Array.Empty<string>();
+    string Size(long? b) => b == null ? "" : b < 1024 * 1024 ? $"{b / 1024.0:0.0} KB" : $"{b / 1048576.0:0.0} MB";
+    string Badge(string? css) => string.IsNullOrEmpty(css) ? "bg-secondary" : css;
+}
+<partial name="_AdminPageTitle" />
+
+<div class="row">
+    <div class="col-xl-8">
+        <div class="card">
+            <div class="card-header d-flex align-items-center">
+                <div class="flex-grow-1">
+                    <h4 class="card-title mb-1">@d.title</h4>
+                    <span class="text-muted">@d.document_number · rev @(v?.display_revision ?? "-") · @d.document_type_name · @d.department_name</span>
+                </div>
+                <span class="badge @Badge(d.badge_css_class) fs-6">@d.state_name</span>
+            </div>
+            <div class="card-body">
+                <div class="row g-3">
+                    <div class="col-md-4"><small class="text-muted d-block">Owner</small>@d.owner_name</div>
+                    <div class="col-md-4"><small class="text-muted d-block">Created</small>@d.created_at.ToString("dd-MMM-yyyy HH:mm") · @d.created_by_name</div>
+                    <div class="col-md-4"><small class="text-muted d-block">Numbering</small>@d.numbering_mode</div>
+                    @if (!string.IsNullOrEmpty(d.master_format_number))
+                    {
+                        <div class="col-md-4"><small class="text-muted d-block">@(d.master_format_number_label ?? "Master Format Number")</small>@d.master_format_number</div>
+                    }
+                    <div class="col-md-4"><small class="text-muted d-block">Effective revision</small>@(d.effective_version_no == null ? "none yet" : $"{d.effective_version_no} from {d.effective_from:dd-MMM-yyyy}")</div>
+                    <div class="col-md-4"><small class="text-muted d-block">Training</small>@(d.training_required ? "Required" : "Not required")</div>
+                    <div class="col-md-4"><small class="text-muted d-block">Change control</small>@(v?.change_control_number == null ? "-" : $"{v.change_control_number} ({v.change_control_status?.ToLowerInvariant()})")
+                    @if(v?.change_control_id is long ccId && v.change_control_status!="VERIFIED"){
+                        <div class="small text-warning">Publication requires a verified, active reference.
+                        @if(Model.CanManageRendition){<a asp-controller="ChangeControl" asp-action="Details" asp-route-id="@ccId">View linked change control</a>}
+                        </div>
+                    }</div>
+                    <div class="col-md-4"><small class="text-muted d-block">Periodic review due</small>@(d.periodic_review_due_on?.ToString("dd-MMM-yyyy") ?? "-")</div>
+                    <div class="col-md-12"><small class="text-muted d-block">Keywords</small>@(d.keywords ?? "-")</div>
+                    <div class="col-md-12"><small class="text-muted d-block">Summary</small>@(d.summary ?? "-")</div>
+                    @if (v != null)
+                    {
+                        <div class="col-md-12"><small class="text-muted d-block">Summary of change (rev @v.display_revision)</small>@(v.change_summary ?? "-")</div>
+                    }
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h5 class="card-title mb-0">Document content</h5></div>
+            <div class="card-body">
+                @if (d.effective_version_id != null && d.effective_version_id != d.current_version_id)
+                {
+                    var inForce = Model.Versions.FirstOrDefault(x => x.id == d.effective_version_id);
+                    <div class="alert alert-success py-2 small">
+                        Revision <strong>@(inForce?.display_revision ?? d.effective_version_no)</strong> remains in force@(d.effective_from == null ? "" : " (effective from " + d.effective_from.Value.ToString("dd-MMM-yyyy") + ")") until this revision is made effective.
+                        @if (Model.Access.can_view_content && inForce?.source_storage_path != null) { <a asp-action="Read" asp-route-id="@d.id" asp-route-versionId="@inForce.id">Read the revision in force</a> }
+                    </div>
+                }
+                @if (v?.source_storage_path == null)
+                {
+                    <p class="text-muted mb-0">No file has been uploaded for revision @(v?.display_revision ?? "00") yet.@(canEdit && Model.Access.can_upload ? " Use Edit to upload it." : "")</p>
+                }
+                else
+                {
+                    <div class="d-flex align-items-center gap-3 flex-wrap">
+                        <i class="ri-file-text-line fs-2 text-primary"></i>
+                        <div class="flex-grow-1">
+                            <div class="fw-semibold">@v.source_file_name <span class="text-muted fw-normal">(@Size(v.source_size_bytes))</span></div>
+                            @if (fileMissing) { <div class="text-danger small">The file is not in the file store - check Dms:Storage:Root.</div> }
+                        </div>
+                        @if (Model.Access.can_view_content)
+                        {
+                            <a class="btn btn-primary" asp-action="Read" asp-route-id="@d.id" asp-route-versionId="@v.id"><i class="ri-eye-line me-1"></i> Read</a>
+                        }
+                        else
+                        {
+                            <span class="text-muted small">Your rights in this state show the record, not the content.</span>
+                        }
+                    </div>
+                }
+            </div>
+        </div>
+
+        <partial name="_WorkflowProgress" model="Model" />
+
+        <div class="card">
+            <div class="card-header"><h5 class="card-title mb-0">Workflow stages (rev @(v?.display_revision))</h5></div>
+            <div class="card-body">
+                @if (Model.Stages.Count == 0)
+                {
+                    <p class="text-muted mb-0">Workflow has not started.</p>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered align-middle mb-0">
+                            <thead class="table-light"><tr><th>Cycle</th><th>No</th><th>Stage</th><th>Assigned</th><th>Signature meaning</th><th>Status</th><th>Due</th><th>Completed</th>@if (Model.CanReassign) { <th></th> }</tr></thead>
+                            <tbody>
+                                @foreach (var s in Model.Stages)
+                                {
+                                    <tr class="@(s.is_current_cycle ? "" : "text-muted")">
+                                        <td>@s.cycle_no</td><td>@s.stage_no</td>
+                                        <td>@(s.stage_name ?? s.stage_code)<div class="small text-muted">@s.stage_kind</div></td>
+                                        <td>
+                                            @(s.assigned_user_name ?? (s.assigned_role_name == null ? "-" : "any " + s.assigned_role_name))
+                                            @if (s.reassigned_from_name != null || s.reassignment_reason != null)
+                                            {
+                                                <div class="small text-muted" title="@s.reassignment_reason">@(s.reassigned_from_name == null ? "" : "was " + s.reassigned_from_name + " · ")@s.reassignment_reason</div>
+                                            }
+                                        </td>
+                                        <td>@s.signature_meaning</td>
+                                        <td>
+                                            <span class="badge @(s.status switch { "COMPLETED" => "bg-success", "IN_PROGRESS" => "bg-info", "REJECTED" => "bg-danger", "CANCELLED" or "SUPERSEDED" or "SKIPPED" => "bg-secondary", _ => "bg-light text-dark" })">@s.status?.Replace('_', ' ')</span>
+                                            @if (s.sla_breached) { <span class="badge bg-danger ms-1">SLA</span> }
+                                            @if (!string.IsNullOrEmpty(s.remarks)) { <div class="small text-muted text-truncate" style="max-width: 220px;" title="@s.remarks">@s.remarks</div> }
+                                        </td>
+                                        <td>@s.due_at?.ToString("dd-MMM-yyyy")</td><td>@s.completed_at?.ToString("dd-MMM-yyyy HH:mm")</td>
+                                        @if (Model.CanReassign)
+                                        {
+                                            <td>
+                                                @if (s.IsOpen && s.is_current_cycle)
+                                                {
+                                                    <button type="button" class="btn btn-sm btn-soft-warning" data-bs-toggle="collapse" data-bs-target="#reassign-@s.id">Reassign</button>
+                                                }
+                                            </td>
+                                        }
+                                    </tr>
+                                    @if (Model.CanReassign && s.IsOpen && s.is_current_cycle)
+                                    {
+                                        <tr class="collapse" id="reassign-@s.id">
+                                            <td colspan="9">
+                                                <form asp-action="Reassign" method="post" class="row g-2 align-items-end">
+                                                    <input type="hidden" name="documentId" value="@d.id" />
+                                                    <input type="hidden" name="workflowInstanceId" value="@s.id" />
+                                                    <input type="hidden" name="expectedRowVersion" value="@s.row_version" />
+                                                    <div class="col-md-4">
+                                                        <label class="form-label small mb-1">Reassign @(s.stage_name ?? s.stage_code) to (QA authority)</label>
+                                                        <select name="newAssigneeUserId" class="form-select form-select-sm" required>
+                                                            <option value="">Select a user…</option>
+                                                            @foreach (var u in Model.AssigneePool) { <option value="@u.user_id">@u.full_name (@u.user_name) - @u.role_names</option> }
+                                                        </select>
+                                                    </div>
+                                                    <div class="col-md-6"><label class="form-label small mb-1">Reason *</label><input name="reason" class="form-control form-control-sm" maxlength="1024" required /></div>
+                                                    <div class="col-md-2"><button class="btn btn-sm btn-warning w-100" type="submit">Reassign</button></div>
+                                                </form>
+                                            </td>
+                                        </tr>
+                                    }
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                }
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h5 class="card-title mb-0">Electronic signatures</h5></div>
+            <div class="card-body">
+                @if (Model.Signatures.Count == 0) { <p class="text-muted mb-0">No signatures yet.</p> }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered align-middle mb-0">
+                            <thead class="table-light"><tr><th>Meaning</th><th>Signed by</th><th>When</th><th>Rev</th><th>Action</th></tr></thead>
+                            <tbody>
+                                @foreach (var g in Model.Signatures)
+                                {
+                                    <tr title="@g.manifestation_text">
+                                        <td><span class="badge bg-success-subtle text-success">@g.signature_meaning</span></td>
+                                        <td>@g.signer_printed_name@(string.IsNullOrEmpty(g.signer_designation) ? "" : ", " + g.signer_designation) <small class="text-muted">(@g.user_name)</small></td>
+                                        <td class="text-nowrap">@g.signed_at_local_display</td>
+                                        <td>@g.version_label</td>
+                                        <td class="small">@g.action_code</td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    <small class="text-muted">Each signature was applied by re-entering the signer's user ID and password (21 CFR 11.200).</small>
+                }
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header d-flex align-items-center">
+                <h5 class="card-title mb-0 flex-grow-1">Revisions</h5>
+                <a class="btn btn-sm btn-light" asp-action="History" asp-route-id="@d.id">Revision history</a>
+                @if (Model.Versions.Count > 1 && Model.Access.can_view_content) { <a class="btn btn-sm btn-soft-primary ms-1" asp-action="Compare" asp-route-id="@d.id"><i class="ri-git-compare-line"></i> Compare</a> }
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered align-middle mb-0">
+                        <thead class="table-light"><tr><th>Rev</th><th>State</th><th>File</th><th>Change control</th><th>Summary of change</th><th>Effective</th><th>Created</th><th></th></tr></thead>
+                        <tbody>
+                            @foreach (var r in Model.Versions)
+                            {
+                                <tr>
+                                    <td class="fw-semibold">@r.display_revision</td>
+                                    <td><span class="badge @Badge(r.badge_css_class)">@r.state_name</span></td>
+                                    <td>@r.source_file_name</td>
+                                    <td>@r.change_control_number</td>
+                                    <td>@r.change_summary</td>
+                                    <td>@r.effective_from?.ToString("dd-MMM-yyyy")</td>
+                                    <td>@r.created_at.ToString("dd-MMM-yyyy") · @r.created_by_name</td>
+                                    <td>@if (Model.Access.can_view_content && r.source_storage_path != null) { <a asp-action="Read" asp-route-id="@d.id" asp-route-versionId="@r.id">Read</a> }</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h5 class="card-title mb-0">Lifecycle history</h5></div>
+            <div class="card-body">
+                @if (Model.History.Count == 0) { <p class="text-muted mb-0">No state changes yet.</p> }
+                else
+                {
+                    <table class="table table-sm table-bordered mb-0">
+                        <thead class="table-light"><tr><th>When</th><th>Action</th><th>From → To</th><th>By</th><th>Signature</th><th>Rev</th><th>Comment / reason</th></tr></thead>
+                        <tbody>
+                            @foreach (var h in Model.History)
+                            {
+                                <tr><td class="text-nowrap">@h.performed_at.ToString("dd-MMM-yyyy HH:mm")</td><td>@h.action_code</td><td>@h.from_state → @h.to_state</td><td>@h.performed_by_name</td><td>@if (h.signature_meaning != null) { <span class="badge bg-success-subtle text-success">@h.signature_meaning</span> }</td><td>@h.version_no</td><td>@h.comments@if (!string.IsNullOrEmpty(h.reason)) { <div class="small text-muted">Reason: @h.reason</div> }</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                }
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header d-flex align-items-center">
+                <h5 class="card-title mb-0 flex-grow-1">Audit trail of this document</h5>
+                @if ((User.Claims.FirstOrDefault(c => c.Type == "serializedPermissionList")?.Value ?? "").Contains("\"View audit trail\""))
+                {
+                    <a class="btn btn-sm btn-light" asp-controller="AuditReview" asp-action="Index" asp-route-DocumentId="@d.id">Full audit trail</a>
+                }
+            </div>
+            <div class="card-body">
+                <div class="table-responsive" style="max-height: 360px; overflow-y: auto;">
+                    <table class="table table-sm table-bordered mb-0">
+                        <thead class="table-light"><tr><th>When</th><th>Who</th><th>Action</th><th>Detail</th><th>Reason</th></tr></thead>
+                        <tbody>
+                            @foreach (var a in Model.Audit)
+                            {
+                                <tr><td class="text-nowrap">@a.occurred_at.ToString("dd-MMM-yyyy HH:mm:ss")</td><td>@a.actor_name</td><td>@UserAuditPresentation.Words(a.action)</td><td>@UserAuditPresentation.Detail(a.action,UserAuditPresentation.Changes(a.before_json,a.after_json))</td><td>@UserAuditPresentation.Text(a.reason)</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-4">
+        <partial name="_WorkflowActions" model="Model" />
+
+        <div class="card">
+            <div class="card-header"><h5 class="card-title mb-0">Actions</h5></div>
+            <div class="card-body d-grid gap-2">
+                @if(v!=null && Model.Access.can_view_content){<a class="btn btn-outline-primary" asp-controller="Intelligence" asp-action="Document" asp-route-versionId="@v.id">Document intelligence / OCR</a>}
+                @if ((ViewBag.canCompose == true || ViewBag.canOffice == true) && v != null)
+                {
+                    <a class="btn btn-primary" asp-action="Compose" asp-route-versionId="@v.id"><i class="ri-edit-2-line me-1"></i> Edit document</a>
+                }
+                @if (Model.Access.can_comment && v != null && Model.Access.can_view_content)
+                {
+                    <a class="btn btn-soft-secondary" asp-action="Editor" asp-route-versionId="@v.id" asp-route-mode="Review">Review with DMS comments</a>
+                }
+                @* Phase 5a - paper copies of the revision in force. *@
+                @if (d.effective_version_id != null && !d.is_obsolete && (d.state_is_effective || d.effective_version_id != d.current_version_id))
+                {
+                    if (Model.CanRequestPrint)
+                    {
+                        <a class="btn btn-soft-info" asp-controller="Print" asp-action="New" asp-route-documentId="@d.id"><i class="ri-printer-line me-1"></i> Request controlled print</a>
+                    }
+                }
+                @if (canEdit)
+                {
+                    <a class="btn btn-success" asp-action="Edit" asp-route-id="@d.id"><i class="ri-pencil-line me-1"></i> Edit draft details / replace file</a>
+                }
+                @if (Model.CanReassign)
+                {
+                    <button type="button" class="btn btn-soft-warning" data-bs-toggle="collapse" data-bs-target="#dms-change-owner">Change document owner (QA)</button>
+                    <form asp-action="ChangeOwner" method="post" class="collapse border rounded p-2" id="dms-change-owner">
+                        <input type="hidden" name="documentId" value="@d.id" />
+                        <label class="form-label small mb-1">New owner</label>
+                        <select name="newOwnerUserId" class="form-select form-select-sm mb-2" required>
+                            <option value="">Select a user…</option>
+                            @foreach (var u in Model.UserPickList.Where(u => u.user_id != d.owner_user_id)) { <option value="@u.user_id">@u.full_name (@u.user_name)</option> }
+                        </select>
+                        <input name="reason" class="form-control form-control-sm mb-2" maxlength="1024" placeholder="Reason (mandatory)" required />
+                        <button type="submit" class="btn btn-sm btn-warning w-100">Change owner</button>
+                    </form>
+                }
+                <a class="btn btn-light" asp-action="Index">Back to register</a>
+            </div>
+        </div>
+
+        <partial name="_RenditionPanel" model="Model" />
+
+        <div class="card" id="dms-links">
+            <div class="card-header"><h5 class="card-title mb-0">Links</h5></div>
+            <div class="card-body">
+                @{ var outgoing = Model.Links.Where(l => l.direction == "OUT").ToList(); var incoming = Model.Links.Where(l => l.direction == "IN").ToList(); }
+                <h6 class="text-muted">This document references</h6>
+                @if (outgoing.Count == 0) { <p class="text-muted small">None.</p> }
+                <ul class="list-unstyled">
+                    @foreach (var l in outgoing)
+                    {
+                        <li class="mb-2">
+                            <a asp-action="Details" asp-route-id="@l.other_document_id">@l.other_document_number</a> @l.other_title
+                            <span class="badge bg-light text-dark">@l.other_state_code</span>
+                            @if (l.link_type != "REFERENCES") { <span class="badge bg-light text-dark">@l.link_type</span> }
+                            @if (!string.IsNullOrEmpty(l.section_reference)) { <small class="text-muted">§ @l.section_reference</small> }
+                            @if (l.impact_flag is "REVIEW_REQUIRED" or "REVIEW_IN_PROGRESS")
+                            {
+                                <div class="border border-warning rounded p-2 mt-1 small">
+                                    <strong>@l.other_document_number is under revision</strong> - check whether this document must change too.
+                                    @if (Model.CanManageLinks)
+                                    {
+                                        <form asp-action="AssessImpact" method="post" class="d-flex gap-1 mt-1">
+                                            <input type="hidden" name="linkId" value="@l.id" /><input type="hidden" name="documentId" value="@d.id" />
+                                            <select name="impactFlag" class="form-select form-select-sm" required>
+                                                <option value="">Conclusion…</option>
+                                                <option value="REVIEW_IN_PROGRESS" selected="@(l.impact_flag == "REVIEW_IN_PROGRESS")">Being assessed</option>
+                                                <option value="NO_IMPACT_CONFIRMED">No impact</option>
+                                            </select>
+                                            <input name="remarks" class="form-control form-control-sm" placeholder="Justification" maxlength="1024" />
+                                            <button class="btn btn-sm btn-warning" type="submit">Record</button>
+                                        </form>
+                                    }
+                                </div>
+                            }
+                            else if (l.impact_flag == "NO_IMPACT_CONFIRMED")
+                            {
+                                <div class="small text-muted">No impact: @l.impact_remarks (@l.impact_assessed_by_name, @l.impact_assessed_at?.ToString("dd-MMM-yyyy"))</div>
+                            }
+                            @if (Model.CanManageLinks)
+                            {
+                                <form asp-action="RemoveLink" method="post" class="d-inline" onsubmit="var r = prompt('Why is this reference removed?'); if (!r) return false; this.reason.value = r;">
+                                    <input type="hidden" name="documentId" value="@d.id" /><input type="hidden" name="linkId" value="@l.id" /><input type="hidden" name="reason" />
+                                    <button type="submit" class="btn btn-link btn-sm p-0 text-danger" title="Remove the reference">remove</button>
+                                </form>
+                            }
+                        </li>
+                    }
+                </ul>
+                @if (Model.CanManageLinks)
+                {
+                    <form asp-action="AddLink" method="post" class="border-top pt-2 mb-3" id="dms-add-link">
+                        <input type="hidden" name="documentId" value="@d.id" />
+                        <input type="hidden" name="targetDocumentId" id="linkTargetId" />
+                        <input class="form-control form-control-sm mb-1" id="linkSearch" list="linkOptions" placeholder="Type a number or title…" autocomplete="off" />
+                        <datalist id="linkOptions"></datalist>
+                        <div class="d-flex gap-1">
+                            <select name="linkType" class="form-select form-select-sm">
+                                <option value="REFERENCES">References</option><option value="ANNEXURE_OF">Annexure of</option>
+                                <option value="FORMAT_OF">Format of</option><option value="RELATED">Related</option>
+                            </select>
+                            <input name="sectionReference" class="form-control form-control-sm" placeholder="Section" maxlength="128" />
+                            <button type="submit" class="btn btn-sm btn-soft-primary">Add</button>
+                        </div>
+                    </form>
+                    <script>
+                        (function () {
+                            var box = document.getElementById('linkSearch'), ids = {};
+                            box.addEventListener('input', function () {
+                                var v = box.value; document.getElementById('linkTargetId').value = ids[v] || '';
+                                if (v.length < 2 || ids[v]) return;
+                                fetch('@Url.Action("Lookup")?exclude=@d.id&q=' + encodeURIComponent(v), { credentials: 'same-origin' })
+                                    .then(function (r) { return r.json(); })
+                                    .then(function (items) {
+                                        var dl = document.getElementById('linkOptions'); dl.innerHTML = '';
+                                        items.forEach(function (i) { ids[i.text] = i.id; var o = document.createElement('option'); o.value = i.text; dl.appendChild(o); });
+                                    });
+                            });
+                        })();
+                    </script>
+                }
+                <h6 class="text-muted">Referenced by</h6>
+                @if (incoming.Count == 0) { <p class="text-muted small mb-0">None.</p> }
+                <ul class="list-unstyled mb-0">
+                    @foreach (var l in incoming) { <li><a asp-action="Details" asp-route-id="@l.other_document_id">@l.other_document_number</a> @l.other_title <span class="badge bg-light text-dark">@l.other_state_code</span>@if (l.impact_flag != "NONE") { <span class="badge @(l.impact_flag == "NO_IMPACT_CONFIRMED" ? "bg-success" : "bg-warning") ms-1">@l.impact_flag?.Replace('_', ' ')</span> }</li> }
+                </ul>
+            </div>
+        </div>
+
+        <div class="card">
+            <div class="card-header"><h5 class="card-title mb-0">Attachments</h5></div>
+            <div class="card-body">
+                @if (Model.Attachments.Count == 0) { <p class="text-muted small">No attachments.</p> }
+                <ul class="list-unstyled">
+                    @foreach (var a in Model.Attachments)
+                    {
+                        <li class="mb-2 @(a.is_current ? "" : "opacity-50")">
+                            <span class="badge bg-light text-dark">@a.attachment_type</span>
+                            @if (Model.Access.can_view_content)
+                            {
+                                <a asp-action="Attachment" asp-route-id="@a.id" asp-route-documentId="@d.id" target="_blank" rel="noopener">@a.title</a>
+                            }
+                            else { @a.title }
+                            <small class="text-muted">v@(a.attachment_version)@(a.is_current ? "" : " (superseded)") · @a.file_name · @Size(a.file_size_bytes)</small>
+                        </li>
+                    }
+                </ul>
+                @if (Model.CanManageAttachments)
+                {
+                    <hr />
+                    <form asp-action="AddAttachment" method="post" enctype="multipart/form-data">
+                        <input type="hidden" name="documentId" value="@d.id" />
+                        <div class="mb-2">
+                            <select name="attachmentType" class="form-select form-select-sm">
+                                @foreach (var t in attachmentTypes) { <option value="@t">@t</option> }
+                            </select>
+                        </div>
+                        <div class="mb-2"><input name="title" class="form-control form-control-sm" maxlength="512" placeholder="Title (same title = new version)" /></div>
+                        <div class="mb-2"><input type="file" name="file" class="form-control form-control-sm" required /></div>
+                        <div class="mb-2"><input name="remarks" class="form-control form-control-sm" maxlength="1024" placeholder="Remarks" /></div>
+                        <div class="form-check mb-2"><input class="form-check-input" type="checkbox" name="forCurrentRevision" value="true" id="forRev" /><label class="form-check-label small" for="forRev">Belongs to rev @(v?.display_revision) only</label></div>
+                        <button type="submit" class="btn btn-sm btn-soft-primary w-100">Attach</button>
+                    </form>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+

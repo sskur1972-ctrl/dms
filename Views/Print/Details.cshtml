@@ -1,0 +1,189 @@
+@using DMS.Model.Documents
+@model PrintDetailsViewModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var r = Model.Request;
+    ViewData["PageTitle"] = "Print Request " + r.request_number;
+    ViewData["Section"] = "Controlled Print";
+    var canPrint = (Model.IsRequester || Model.CanIssue) && r.is_version_in_force && (r.status == "AUTHORIZED" || r.status == "ISSUED");
+    var canCancel = (Model.IsRequester || Model.CanAuthorize) && (r.status == "PENDING" || r.status == "AUTHORIZED")
+                    && Model.Copies.All(c => c.status == "ALLOCATED");
+    var canDecide = Model.CanAuthorize && !Model.IsRequester && r.status == "PENDING";
+}
+<partial name="_AdminPageTitle" />
+
+<div class="row">
+    <div class="col-xl-8">
+        <div class="card">
+            <div class="card-header d-flex align-items-center gap-2">
+                <h5 class="card-title mb-0 flex-grow-1">@r.request_number <partial name="_PrintBadge" model="r.status" /></h5>
+                <a class="btn btn-sm btn-light" asp-action="Index">All requests</a>
+            </div>
+            <div class="card-body">
+                <dl class="row mb-0 small">
+                    <dt class="col-sm-3">Document</dt>
+                    <dd class="col-sm-9"><a asp-controller="Documents" asp-action="Details" asp-route-id="@r.document_id">@r.document_number</a> rev @r.version_label - @r.title
+                        @if (!r.is_version_in_force) { <span class="badge bg-danger ms-1">revision no longer in force</span> }</dd>
+                    <dt class="col-sm-3">Copies</dt>
+                    <dd class="col-sm-9">@r.copies_requested requested@(r.copies_authorized is int n ? $", {n} authorised" : "") · @(r.copy_type == "CONTROLLED" ? "controlled (numbered, to be returned)" : "uncontrolled (for information only)")</dd>
+                    <dt class="col-sm-3">Purpose</dt><dd class="col-sm-9">@r.purpose</dd>
+                    <dt class="col-sm-3">Requested by</dt><dd class="col-sm-9">@r.requested_by_name · @r.requested_at.ToString("dd-MMM-yyyy HH:mm") UTC</dd>
+                    <dt class="col-sm-3">Issue to</dt><dd class="col-sm-9">@r.issue_to_name@(string.IsNullOrEmpty(r.issue_to_department) ? "" : " · " + r.issue_to_department)</dd>
+                    <dt class="col-sm-3">Return by</dt><dd class="col-sm-9">@(r.return_due_on?.ToString("dd-MMM-yyyy") ?? "-")</dd>
+                    @if (r.decided_at != null)
+                    {
+                        <dt class="col-sm-3">Decision</dt>
+                        <dd class="col-sm-9">@(r.status == "REJECTED" ? "Rejected" : "Authorised") by @r.decided_by_name · @r.decided_at?.ToString("dd-MMM-yyyy HH:mm") UTC
+                            @if (!string.IsNullOrEmpty(r.decision_remarks)) { <div class="text-muted">@r.decision_remarks</div> }
+                            @if (!string.IsNullOrEmpty(r.signature_manifestation)) { <div class="mt-1"><i class="ri-quill-pen-line"></i> @r.signature_manifestation</div> }
+                        </dd>
+                    }
+                </dl>
+            </div>
+        </div>
+
+        @if (Model.Copies.Count > 0)
+        {
+            <div class="card">
+                <div class="card-header"><h5 class="card-title mb-0">Numbered copies</h5></div>
+                <div class="card-body">
+                    <div class="table-responsive">
+                        <table class="table table-sm table-bordered align-middle mb-0">
+                            <thead class="table-light"><tr><th>Copy number</th><th>Status</th><th>Issued to</th><th>Printed</th><th>Returned / destroyed</th><th style="min-width:280px">Action</th></tr></thead>
+                            <tbody>
+                                @foreach (var c in Model.Copies)
+                                {
+                                    <tr>
+                                        <td class="font-monospace text-nowrap">@c.copy_control_number</td>
+                                        <td><partial name="_PrintBadge" model="c.status" /></td>
+                                        <td class="small">@c.issued_to_name</td>
+                                        <td class="small text-nowrap">@(c.issued_at?.ToString("dd-MMM-yyyy HH:mm") ?? "-")@(c.prints > 1 ? $" ({c.prints} prints)" : "")<div class="text-muted">@c.issued_by_name</div></td>
+                                        <td class="small">@(c.returned_at?.ToString("dd-MMM-yyyy") ?? "") @(c.destroyed_at != null ? "destroyed " + c.destroyed_at?.ToString("dd-MMM-yyyy") + " (" + c.destruction_reference + ")" : "")
+                                            @if (!string.IsNullOrEmpty(c.remarks)) { <div class="text-muted">@c.remarks</div> }</td>
+                                        <td>
+                                            @if (canPrint && c.status == "ALLOCATED")
+                                            {
+                                                <form asp-action="PrintCopy" method="post" target="_blank" class="d-flex flex-wrap gap-1 mb-1 dms-print-form">
+                                                    <input type="hidden" name="copyId" value="@c.id" />
+                                                    <input name="printer" type="hidden" value="Browser print dialog" />
+                                                        <input name="issuedToName" class="form-control form-control-sm" style="max-width:150px" placeholder="Issued to" value="@c.issued_to_name" />
+                                                        <button class="btn btn-sm btn-primary" type="submit"><i class="ri-printer-line"></i> Print</button>
+                                                </form>
+                                            }
+                                            @if (Model.CanIssue && (c.status == "ISSUED" || c.status == "RETURNED"))
+                                            {
+                                                <form asp-action="CloseCopy" method="post" class="d-flex flex-wrap gap-1">
+                                                    <input type="hidden" name="copyId" value="@c.id" />
+                                                    <input type="hidden" name="requestId" value="@r.id" />
+                                                    <select name="outcome" class="form-select form-select-sm" style="max-width:120px">
+                                                        @if (c.status == "ISSUED") { <option value="RETURNED">Returned</option> }
+                                                        <option value="DESTROYED">Destroyed</option>
+                                                        @if (c.status == "ISSUED") { <option value="LOST">Lost</option> }
+                                                    </select>
+                                                    <input name="reference" class="form-control form-control-sm" style="max-width:120px" placeholder="Destruction ref." />
+                                                    <input name="remarks" class="form-control form-control-sm" style="max-width:140px" placeholder="Remarks" />
+                                                    <button class="btn btn-sm btn-light" type="submit">Record</button>
+                                                </form>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    @if (canPrint)
+                    {
+                        <p class="small text-muted mt-2 mb-0">
+                            Print opens the printer dialog for one numbered copy. Once issued, this copy cannot be issued again; a cancelled or failed print requires a new QA-authorised request.
+                        </p>
+                    }
+                </div>
+            </div>
+        }
+
+        <div class="card">
+            <div class="card-header"><h5 class="card-title mb-0">Print log</h5></div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table table-sm table-bordered mb-0 small">
+                        <thead class="table-light"><tr><th>When (UTC)</th><th>Event</th><th>Copy</th><th>By</th><th>Printer / ref.</th><th>SHA-256</th><th>Remarks</th></tr></thead>
+                        <tbody>
+                            @if (Model.Log.Count == 0) { <tr><td colspan="7" class="text-muted text-center">Nothing printed yet.</td></tr> }
+                            @foreach (var l in Model.Log)
+                            {
+                                <tr><td class="text-nowrap">@l.performed_at.ToString("dd-MMM-yyyy HH:mm:ss")</td><td>@l.event_type</td><td class="font-monospace">@l.copy_control_number</td>
+                                    <td>@l.performed_by_name</td><td>@l.printer_or_target</td><td class="font-monospace" title="@l.file_sha256">@(l.file_sha256?[..12])</td><td>@l.remarks</td></tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="col-xl-4">
+        @if (canDecide)
+        {
+            <div class="card border-primary">
+                <div class="card-header"><h5 class="card-title mb-0">QA decision</h5></div>
+                <div class="card-body">
+                    <form asp-action="Decide" method="post" autocomplete="off" id="dmsPrintDecide">
+                        <input type="hidden" name="RequestId" value="@r.id" />
+                        <input type="hidden" name="ExpectedRowVersion" value="@r.row_version" />
+                        <input type="hidden" name="Approve" value="true" id="dmsApprove" />
+                        <input type="hidden" name="SignatureMeaning" value="Print authorized by" />
+                        <div class="mb-2">
+                            <label class="form-label">Copies to authorise</label>
+                            <input class="form-control" type="number" name="CopiesAuthorized" min="1" max="1" value="1" readonly />
+                        </div>
+                        <div class="mb-2">
+                            <label class="form-label">Remarks <small class="text-muted">(required to reject)</small></label>
+                            <textarea class="form-control" name="Remarks" rows="2" maxlength="1024"></textarea>
+                        </div>
+                        <fieldset class="border rounded p-2 mb-2" id="dmsSignBlock">
+                            <legend class="float-none w-auto px-2 fs-6 mb-0">Electronic signature</legend>
+                            <p class="small mb-2">Meaning: <strong>Print authorized by</strong></p>
+                            <input class="form-control form-control-sm mb-2" name="SignatureUserName" value="@Model.CurrentUserName" placeholder="User ID" />
+                            <input class="form-control form-control-sm mb-2" name="SignaturePassword" type="password" autocomplete="new-password" placeholder="Password" />
+                            <div class="form-check">
+                                <input class="form-check-input" type="checkbox" name="MeaningAcknowledged" value="true" id="dmsAck" />
+                                <label class="form-check-label small" for="dmsAck">I apply my electronic signature with the meaning shown; it is the legally binding equivalent of my handwritten signature.</label>
+                            </div>
+                        </fieldset>
+                        <div class="d-flex gap-2">
+                            <button type="submit" class="btn btn-success flex-grow-1" onclick="document.getElementById('dmsApprove').value='true'"><i class="ri-quill-pen-line me-1"></i> Authorise</button>
+                            <button type="submit" class="btn btn-outline-danger" formnovalidate onclick="document.getElementById('dmsApprove').value='false'">Reject</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        }
+        else if (r.status == "PENDING")
+        {
+            <div class="alert alert-warning">Awaiting QA authorisation.@(Model.IsRequester && Model.CanAuthorize ? " You raised this request, so another QA person must decide it." : "")</div>
+        }
+
+        @if (canCancel)
+        {
+            <div class="card">
+                <div class="card-header"><h6 class="card-title mb-0">Cancel the request</h6></div>
+                <div class="card-body">
+                    <form asp-action="Cancel" method="post">
+                        <input type="hidden" name="id" value="@r.id" />
+                        <input class="form-control form-control-sm mb-2" name="reason" placeholder="Reason" required minlength="3" />
+                        <button class="btn btn-sm btn-outline-secondary" type="submit">Cancel request</button>
+                    </form>
+                </div>
+            </div>
+        }
+    </div>
+</div>
+
+@section Scripts {
+    <script>
+        // after a copy is produced in the new tab, reload this page so its status shows
+        document.querySelectorAll('.dms-print-form').forEach(function (f) {
+            f.addEventListener('submit', function () { setTimeout(function () { window.location.reload(); }, 2500); });
+        });
+    </script>
+}

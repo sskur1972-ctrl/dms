@@ -1,0 +1,111 @@
+@using DMS.Model.Documents
+@model DocumentDetailsViewModel
+@*
+    Phase 4 - the controlled copy (watermarked PDF) of the revision and the external view links.
+    The PDF is produced in the background after every state change.
+*@
+@{
+    var d = Model.Document;
+    var v = Model.CurrentVersion;
+    var r = Model.Rendition;
+    string? shareUrl = TempData["ShareLinkUrl"] as string;
+}
+@if (v != null && (v.source_storage_path != null || r?.rendered_pdf_path != null))
+{
+    <div class="card" id="dms-rendition">
+        <div class="card-header"><h5 class="card-title mb-0">PDF rendition (controlled copy)</h5></div>
+        <div class="card-body small">
+            @if (r?.rendered_pdf_path != null)
+            {
+                <div class="mb-2">
+                    <span class="badge @(r.IsCurrent ? "bg-success" : "bg-warning")">@(r.IsCurrent ? "up to date" : "out of date")</span>
+                    <strong>@r.rendered_watermark</strong> · @r.rendered_at?.ToString("dd-MMM-yyyy HH:mm") UTC
+                </div>
+                @if (Model.Access.can_view_content)
+                {
+                    <a class="btn btn-sm btn-soft-primary mb-2" asp-action="Read" asp-route-id="@d.id" asp-route-versionId="@v.id" asp-route-view="pdf"><i class="ri-file-pdf-2-line me-1"></i> Read the controlled copy</a>
+                }
+            }
+            else
+            {
+                <p class="text-muted mb-2">No PDF yet for revision @v.display_revision.</p>
+            }
+            @if (r?.job_status is "PENDING" or "RUNNING")
+            {
+                <div class="alert alert-info py-1 px-2 mb-2">Being produced for @r.job_state_code (@r.job_status.ToLowerInvariant()) - reload the page in a moment.</div>
+            }
+            else if (r?.job_status == "FAILED")
+            {
+                <div class="alert alert-danger py-1 px-2 mb-2">The last attempt failed: @r.job_error</div>
+            }
+            @if (Model.EffectiveRendition?.rendered_pdf_path != null && Model.Access.can_view_content)
+            {
+                <div class="mb-2">Revision in force: <a asp-action="Read" asp-route-id="@d.id" asp-route-versionId="@Model.EffectiveRendition.version_id" asp-route-view="pdf">@Model.EffectiveRendition.rendered_watermark copy</a></div>
+            }
+            <div class="d-flex gap-1 flex-wrap">
+                @if (Model.CanManageRendition || Model.Access.is_owner || Model.Access.holds_open_stage)
+                {
+                    <form asp-action="RequestRendition" method="post">
+                        <input type="hidden" name="documentId" value="@d.id" /><input type="hidden" name="versionId" value="@v.id" />
+                        <button type="submit" class="btn btn-sm btn-light">@(r?.rendered_pdf_path == null ? "Produce the PDF now" : "Produce again")</button>
+                    </form>
+                }
+                @if (Model.CanManageRendition)
+                {
+                    <a class="btn btn-sm btn-light" asp-action="AttachRendition" asp-route-id="@d.id" asp-route-versionId="@v.id">Attach a PDF</a>
+                    <a class="btn btn-sm btn-light" asp-controller="RenditionAdmin" asp-action="Index">Queue</a>
+                }
+            </div>
+        </div>
+    </div>
+}
+
+@if (Model.CanShare)
+{
+    <div class="card" id="dms-share">
+        <div class="card-header"><h5 class="card-title mb-0">External view links</h5></div>
+        <div class="card-body small">
+            <p class="text-muted">A view-only link (for SAP or another system) to the controlled copy of the revision in force. Anyone holding the link can read it until it expires or is withdrawn; every opening is audited.</p>
+            @if (shareUrl != null)
+            {
+                <div class="alert alert-success py-2">
+                    <strong>Copy the link now - it is shown only once:</strong>
+                    <input class="form-control form-control-sm mt-1 font-monospace" value="@shareUrl" readonly onclick="this.select()" />
+                </div>
+            }
+            @foreach (var l in Model.ShareLinks)
+            {
+                <div class="border rounded p-2 mb-2 @(l.is_active ? "" : "opacity-50")">
+                    <strong>#@l.id</strong> <span class="font-monospace">@l.token_hint…</span> · @l.purpose @(l.pinned_version_label == null ? "(follows the revision in force)" : $"(rev {l.pinned_version_label} only)")
+                    <div class="text-muted">Created @l.created_at.ToString("dd-MMM-yyyy") by @l.created_by_name · expires @(l.expires_at.Year >= 9999 ? "never" : l.expires_at.ToString("dd-MMM-yyyy")) · @l.view_count view(s)@(l.last_viewed_at == null ? "" : $", last {l.last_viewed_at:dd-MMM-yyyy HH:mm} from {l.last_viewed_ip}")</div>
+                    @if (!string.IsNullOrEmpty(l.note)) { <div>@l.note</div> }
+                    @if (l.revoked_at != null) { <div class="text-danger">Withdrawn @l.revoked_at?.ToString("dd-MMM-yyyy") by @l.revoked_by_name: @l.revoke_reason</div> }
+                    else if (l.is_active)
+                    {
+                        <form asp-action="RevokeShareLink" method="post" class="mt-1" onsubmit="var r = prompt('Why is the link withdrawn?'); if (!r) return false; this.reason.value = r;">
+                            <input type="hidden" name="documentId" value="@d.id" /><input type="hidden" name="linkId" value="@l.id" /><input type="hidden" name="reason" />
+                            <button class="btn btn-sm btn-outline-danger py-0" type="submit">Withdraw</button>
+                        </form>
+                    }
+                </div>
+            }
+            @if (d.state_is_effective && d.effective_version_id != null)
+            {
+                <form asp-action="CreateShareLink" method="post" class="border-top pt-2">
+                    <input type="hidden" name="documentId" value="@d.id" />
+                    <div class="d-flex gap-1 mb-1">
+                        <input name="purpose" class="form-control form-control-sm" value="SAP" maxlength="64" placeholder="For (SAP, LMS…)" />
+                        <input name="days" type="number" min="1" class="form-control form-control-sm" style="max-width: 90px;" placeholder="days" />
+                    </div>
+                    <input name="note" class="form-control form-control-sm mb-1" maxlength="512" placeholder="Note (where it is used)" />
+                    <div class="form-check mb-1"><input class="form-check-input" type="checkbox" name="pinCurrent" value="true" id="pinCurrent" /><label class="form-check-label" for="pinCurrent">Only this revision (do not follow later revisions)</label></div>
+                    <button type="submit" class="btn btn-sm btn-soft-primary w-100">Create a link</button>
+                </form>
+            }
+            else
+            {
+                <p class="text-muted mb-0">A link can be created once the document is in force.</p>
+            }
+        </div>
+    </div>
+}

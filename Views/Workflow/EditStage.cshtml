@@ -1,0 +1,137 @@
+@using DMS.Model.Master
+@using DMS.Model.Account
+@model WorkflowStage
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["PageTitle"] = Model.id > 0 ? "Edit Workflow Stage" : "Add Workflow Stage";
+    var type = ViewBag.documentType as DocumentType;
+    var states = ViewBag.states as List<DocumentState> ?? new List<DocumentState>();
+    var roles = ViewBag.roles as List<RoleDropDownViewModel> ?? new List<RoleDropDownViewModel>();
+    var users = ViewBag.users as List<UserforIndexmodel> ?? new List<UserforIndexmodel>();
+    var departments = ViewBag.departments as List<DepartmentDropDownViewModel> ?? new List<DepartmentDropDownViewModel>();
+}
+<partial name="_AdminPageTitle" />
+
+<div class="row">
+    <div class="col-xl-12">
+        <div class="card">
+            <div class="card-header"><h4 class="card-title mb-0">@ViewData["PageTitle"] - @type?.code @type?.name</h4></div>
+            <div class="alert alert-warning py-2 m-3 mb-0" role="alert" style="font-size: 14px;">
+                ⚠ Fields marked <span style="color: red;">*</span> are required. The signature meaning is printed on the signature manifest (21 CFR Part 11 §11.50).
+            </div>
+            <div class="card-body">
+                <form asp-action="EditStage" method="post" class="row g-3" onsubmit="return checkReason()">
+                    <input type="hidden" asp-for="id" />
+                    <input type="hidden" asp-for="document_type_id" />
+                    <div class="form-group col-xl-2 mb-3">
+                        <label class="form-label" asp-for="stage_no"></label> <span style="color: red;">*</span>
+                        <input asp-for="stage_no" type="number" min="1" max="99" class="form-control" required />
+                    </div>
+                    <div class="form-group col-xl-3 mb-3">
+                        <label class="form-label" asp-for="stage_code"></label> <span style="color: red;">*</span>
+                        <input asp-for="stage_code" class="form-control text-uppercase" maxlength="32" required autocomplete="off" />
+                    </div>
+                    <div class="form-group col-xl-7 mb-3">
+                        <label class="form-label" asp-for="stage_name"></label> <span style="color: red;">*</span>
+                        <input asp-for="stage_name" class="form-control" maxlength="128" required autocomplete="off" />
+                    </div>
+                    <div class="form-group col-xl-3 mb-3">
+                        <label class="form-label" asp-for="stage_kind"></label>
+                        <select asp-for="stage_kind" class="form-select" onchange="defaultMeaning()">
+                            <option value="REVIEW">Review</option>
+                            <option value="APPROVAL">Approval</option>
+                            <option value="AUTHORIZATION">Authorization</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-xl-3 mb-3">
+                        <label class="form-label" asp-for="state_code"></label>
+                        <select asp-for="state_code" class="form-select">
+                            @foreach (var st in states)
+                            {
+                                <option value="@st.code">@st.name (@st.code)</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group col-xl-3 mb-3">
+                        <label class="form-label" asp-for="routing_mode"></label>
+                        <select asp-for="routing_mode" class="form-select">
+                            <option value="SEQUENTIAL">Sequential</option>
+                            <option value="PARALLEL">Parallel</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-xl-3 mb-3">
+                        <label class="form-label" asp-for="department_id"></label>
+                        <select asp-for="department_id" class="form-select">
+                            <option value="">All departments</option>
+                            @foreach (var d in departments)
+                            {
+                                <option value="@d.id">@d.DisplayText</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group col-xl-4 mb-3">
+                        <label class="form-label" asp-for="required_role_id"></label>
+                        <select asp-for="required_role_id" class="form-select">
+                            <option value="">Any assigned user</option>
+                            @foreach (var r in roles)
+                            {
+                                <option value="@r.RoleId">@r.role_name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group col-xl-4 mb-3">
+                        <label class="form-label" asp-for="default_assignee_id"></label>
+                        <select asp-for="default_assignee_id" class="form-select">
+                            <option value="">-- None --</option>
+                            @foreach (var u in users.OrderBy(x => x.DisplayName))
+                            {
+                                <option value="@u.pk_user">@u.DisplayName (@u.username)</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group col-xl-4 mb-3">
+                        <label class="form-label" asp-for="signature_meaning"></label> <span style="color: red;">*</span>
+                        <input asp-for="signature_meaning" class="form-control" maxlength="64" required />
+                    </div>
+                    <div class="form-group col-xl-2 mb-3">
+                        <label class="form-label" asp-for="sla_days"></label>
+                        <input asp-for="sla_days" type="number" min="1" max="365" class="form-control" />
+                    </div>
+                    <div class="form-group col-xl-2 mb-3">
+                        <label class="form-label" asp-for="min_approvals"></label>
+                        <input asp-for="min_approvals" type="number" min="1" max="20" class="form-control" />
+                    </div>
+                    <div class="col-xl-8 mb-3 d-flex align-items-end">
+                        <div class="form-check form-check-inline"><input class="form-check-input" asp-for="is_mandatory" /><label class="form-check-label" asp-for="is_mandatory"></label></div>
+                        <div class="form-check form-check-inline"><input class="form-check-input" asp-for="is_active" /><label class="form-check-label" asp-for="is_active"></label></div>
+                    </div>
+                    <div class="form-group col-xl-12 mb-3">
+                        <label class="form-label" for="reason">Reason for change</label> <span style="color: red;">*</span>
+                        <textarea id="reason" name="reason" class="form-control" rows="2" maxlength="1000" required></textarea>
+                        <span id="reason_error" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <div class="text-end">
+                            <a asp-action="Index" asp-route-documentTypeId="@Model.document_type_id" class="btn btn-primary ms-2">Back To List</a>
+                            <button type="submit" class="btn btn-success">Save</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    var meanings = { REVIEW: 'Reviewed by', APPROVAL: 'Approved by', AUTHORIZATION: 'Authorized by' };
+    function defaultMeaning() {
+        var input = document.getElementById('signature_meaning');
+        var known = Object.values(meanings);
+        if (input.value === '' || known.indexOf(input.value) >= 0)
+            input.value = meanings[document.getElementById('stage_kind').value] || input.value;
+    }
+    function checkReason() {
+        var ok = document.getElementById('reason').value.trim().length >= 3;
+        document.getElementById('reason_error').textContent = ok ? '' : 'Please enter the reason for this change.';
+        return ok;
+    }
+</script>

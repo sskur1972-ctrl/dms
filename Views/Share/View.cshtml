@@ -1,0 +1,49 @@
+@using DMS.Model.Documents
+@model ShareResolution
+@{
+    Layout = null;
+    var ok = Model.status == "OK";
+}
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <meta name="robots" content="noindex, nofollow" />
+    <title>@(Model.document_number ?? "Document") - view only</title>
+    <style>
+        body { margin: 0; font-family: "Segoe UI", Arial, sans-serif; background: #f3f4f6; color: #1f2937; }
+        header { background: #0f5132; color: #fff; padding: 10px 18px; display: flex; flex-wrap: wrap; gap: 6px 18px; align-items: baseline; }
+        header strong { font-size: 16px; }
+        header span { font-size: 13px; opacity: .9; }
+        .note { font-size: 12px; padding: 6px 18px; background: #fff7e6; border-bottom: 1px solid #f0d9a8; }
+        iframe { width: 100%; height: calc(100vh - 80px); border: 0; display: block; background: #fff; }
+        .message { max-width: 560px; margin: 12vh auto; background: #fff; border-radius: 6px; padding: 28px; box-shadow: 0 1px 4px rgba(0,0,0,.12); }
+        .message h1 { font-size: 20px; margin: 0 0 8px; }
+    </style>
+</head>
+<body>
+@if (ok)
+{
+    <header>
+        <strong>@Model.document_number</strong>
+        <span>@Model.title</span>
+        <span>Revision @Model.version_label@(Model.effective_from == null ? "" : " · effective from " + Model.effective_from.Value.ToString("dd-MMM-yyyy"))</span>
+        <span>View only · @(Model.expires_at?.Year >= 9999 ? "no expiry" : "link expires " + Model.expires_at?.ToString("dd-MMM-yyyy"))</span>
+    </header>
+    @if (Model.is_superseded)
+    {
+        <div class="note"><strong>This revision has been superseded.</strong> The link was made for revision @Model.version_label only; a later revision is now in force.</div>
+    }
+    <iframe src="/s/@Model.Token/pdf#toolbar=0&navpanes=0" title="@Model.document_number"></iframe>
+}
+else
+{
+    <div class="message">
+        <h1>@(Model.status == "NO_RENDITION" ? "Not available yet" : "This link cannot be opened")</h1>
+        <p>@(Model.message ?? "This link is not valid.")</p>
+        <p style="font-size: 13px; color: #6b7280;">Ask the owner of the document (Quality Assurance) for a current link.</p>
+    </div>
+}
+</body>
+</html>

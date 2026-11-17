@@ -1,0 +1,9 @@
+.dms-restricted-pane{flex:1 1 0;min-width:0;overflow:auto;background:#e5e7eb;height:calc(100dvh - 130px)}
+#dms-review-viewer{width:100%}
+#dms-review-viewer .dms-comment-pane{flex:0 0 clamp(280px,22vw,340px);min-width:0}
+[data-restricted-pdf]{user-select:none;-webkit-user-select:none;min-height:65vh;position:relative;background:#e5e7eb}
+.dms-pdf-controls{position:sticky;top:0;z-index:6;background:#fff;display:flex;gap:8px;align-items:center;padding:6px 12px;border-bottom:1px solid #ccc}
+.dms-pdf-controls input{width:64px}.dms-pdf-pages{padding:12px}.dms-pdf-page{background:#fff;margin:0 auto 12px;max-width:100%;min-height:350px;box-shadow:0 1px 4px #999;position:relative}
+.dms-pdf-page canvas{display:block;width:100%;height:auto;pointer-events:none}.dms-reader .dms-page{user-select:none;-webkit-user-select:none}
+@media(max-width:800px){.dms-restricted-pane{flex:none;width:100%;height:70dvh}#dms-review-viewer .dms-comment-pane{flex:none;width:100%}}
+@media print{[data-restricted-pdf],.dms-reader,#dms-review-viewer{display:none!important}}

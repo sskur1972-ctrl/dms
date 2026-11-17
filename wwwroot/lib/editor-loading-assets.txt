@@ -1,0 +1,18 @@
+Local shared-layout dependencies (same versions as the former CDN references)
+
+jQuery Validation 1.19.5 (MIT):
+https://cdnjs.cloudflare.com/ajax/libs/jquery-validate/1.19.5/jquery.validate.min.js
+Project: https://github.com/jquery-validation/jquery-validation
+
+jQuery Validation Unobtrusive 3.2.12 (Apache-2.0):
+https://cdnjs.cloudflare.com/ajax/libs/jquery-validation-unobtrusive/3.2.12/jquery.validate.unobtrusive.min.js
+Project: https://github.com/aspnet/jquery-validation-unobtrusive
+
+Bootstrap Icons 1.11.3 (MIT):
+https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css
+https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/fonts/bootstrap-icons.woff2
+https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/fonts/bootstrap-icons.woff
+Project: https://github.com/twbs/icons
+
+Original minified license headers are retained. Assets are served locally to
+avoid external network dependencies during editor startup.

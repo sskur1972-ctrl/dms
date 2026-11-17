@@ -1,0 +1,75 @@
+﻿@using DMS.Model.Account
+@model Permissions
+
+
+<div class="row m-3">
+    <div class="col-xl-12">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title">Delete Permissions</h4>
+            </div>
+            <div class="card-body">
+
+
+                 <form id="frmSubmit" onsubmit="return submitForm()" asp-controller="Permissions" asp-action="DeletePost" class="row g-3 needs-validation" novalidate>
+            <div class="card">
+                <div class="card-body">
+                    <div class="form-row row">
+                        <div class="form-group col-xl-6  mb-4">
+                            <input asp-for="pk_permission" hidden />
+
+                            <label asp-for="permission" class="form-label" autocomplete="off"></label>
+                            <input asp-for="permission" required class="form-control" placeholder="Enter Permission" disabled />
+                            <span id="permission_error" class="text-danger"></span>
+
+                        </div>
+                                <div class="col-6">
+
+                                    <div class="mb-3">
+
+                                        <label asp-for="fk_Module_Id"></label>
+
+                                        @Html.DropDownListFor(model => model.fk_Module_Id, new SelectList(@ViewBag.module, "Module_Id", "Module_Name"), "Select Module Name", new { @class = "form-select ", @required = "true", @validate = "true", @disabled = "true" })
+
+                                    </div>
+
+                                </div>
+                    </div>
+
+                    <div class="form-group">
+                        <div class="text-end">
+                            <input type="button" class="btn btn-primary" onclick="location.href='@Url.Action("Index", "Permissions")'" value="Back To List" />
+
+                            <button type="button" onclick="deletePermission(@Model.pk_permission)" class="btn btn-danger btn-label "> Delete</button>
+
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </form>
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<script>
+
+      function deletePermission(value) {
+
+        Swal.fire({
+            title: "Are you sure?",
+            text: "Do you want to delete this Permission?",
+            type: "warning",
+            showCancelButton: true,
+            confirmButtonColor: "#DD6B55",
+            confirmButtonText: "Yes, delete it !!"
+        }).then((result) => {
+            if (result.value == true) {
+                        document.getElementById("frmSubmit").submit();
+            }
+        });
+    }
+
+    
+</script>

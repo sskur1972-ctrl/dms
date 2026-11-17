@@ -1,0 +1,100 @@
+@using DMS.Model.Master
+@model ComplianceRule
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["PageTitle"] = "Edit Review Rule";
+    var kind = (Model.rule_kind ?? "").ToUpperInvariant();
+    var patternHelp = kind switch
+    {
+        "TEXT_MUST_NOT_MATCH" => "Regular expression (case-insensitive). The rule fires when the document text matches it.",
+        "REFERENCES_NOT_LINKED" => "Regular expression for a document number. The rule fires when a matching number in the text is not linked to the document.",
+        "TEXT_MUST_CONTAIN_ALL" => "Terms separated by | - the rule fires for every term the document text does not contain.",
+        _ => "This rule kind has no pattern."
+    };
+    bool hasPattern = kind is "TEXT_MUST_NOT_MATCH" or "REFERENCES_NOT_LINKED" or "TEXT_MUST_CONTAIN_ALL";
+}
+<partial name="_AdminPageTitle" />
+
+<div class="row">
+    <div class="col-xl-12">
+        <div class="card">
+            <div class="card-header"><h4 class="card-title mb-0">@Model.rule_code <small class="text-muted">(@Model.rule_kind)</small></h4></div>
+            <div class="alert alert-warning py-2 m-3 mb-0" role="alert" style="font-size: 14px;">
+                ⚠ The pattern is checked before it is saved. If somebody else changes this rule while you edit it, your save is refused - reload and re-apply your change.
+            </div>
+            <div class="card-body">
+                <form asp-action="Edit" method="post" class="row g-3" onsubmit="return checkReason()">
+                    <input type="hidden" asp-for="id" />
+                    <input type="hidden" asp-for="row_version" />
+                    <input type="hidden" asp-for="rule_kind" />
+                    <div class="form-group col-xl-8 mb-3">
+                        <label asp-for="title" class="form-label"></label> <span style="color: red;">*</span>
+                        <input asp-for="title" class="form-control" maxlength="255" required />
+                    </div>
+                    <div class="form-group col-xl-2 mb-3">
+                        <label asp-for="severity" class="form-label"></label>
+                        <select asp-for="severity" class="form-select">
+                            <option value="INFO">Info</option>
+                            <option value="LOW">Low</option>
+                            <option value="MEDIUM">Medium</option>
+                            <option value="HIGH">High</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-xl-2 mb-3">
+                        <label asp-for="sort_order" class="form-label"></label>
+                        <input asp-for="sort_order" type="number" class="form-control" />
+                    </div>
+                    <div class="form-group col-xl-12 mb-3">
+                        <label asp-for="detail" class="form-label"></label> <span style="color: red;">*</span>
+                        <textarea asp-for="detail" class="form-control" rows="3" required></textarea>
+                    </div>
+                    <div class="form-group col-xl-12 mb-3">
+                        <label asp-for="suggestion" class="form-label"></label>
+                        <textarea asp-for="suggestion" class="form-control" rows="2"></textarea>
+                    </div>
+                    @if (hasPattern)
+                    {
+                        <div class="form-group col-xl-8 mb-3">
+                            <label asp-for="pattern" class="form-label"></label> <span style="color: red;">*</span>
+                            <input asp-for="pattern" class="form-control font-monospace" maxlength="1000" required />
+                            <small class="text-muted">@patternHelp</small>
+                        </div>
+                    }
+                    else
+                    {
+                        <input type="hidden" asp-for="pattern" />
+                    }
+                    <div class="form-group col-xl-4 mb-3">
+                        <label asp-for="applies_to_type_code" class="form-label"></label>
+                        <input asp-for="applies_to_type_code" class="form-control text-uppercase" maxlength="32" />
+                    </div>
+                    <div class="form-group col-xl-12 mb-3">
+                        <label asp-for="rationale" class="form-label"></label>
+                        <textarea asp-for="rationale" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div class="col-xl-12 mb-2">
+                        <div class="form-check form-check-inline"><input class="form-check-input" asp-for="is_active" /><label class="form-check-label" asp-for="is_active"></label></div>
+                    </div>
+                    <div class="form-group col-xl-12 mb-3">
+                        <label class="form-label" for="reason">Reason for change</label> <span style="color: red;">*</span>
+                        <textarea id="reason" name="reason" class="form-control" rows="2" maxlength="1000" required></textarea>
+                        <span id="reason_error" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <div class="text-end">
+                            <a asp-action="Index" class="btn btn-primary ms-2">Back To List</a>
+                            <button type="submit" class="btn btn-success">Save</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    function checkReason() {
+        var ok = document.getElementById('reason').value.trim().length >= 3;
+        document.getElementById('reason_error').textContent = ok ? '' : 'Please enter the reason for this change.';
+        return ok;
+    }
+</script>

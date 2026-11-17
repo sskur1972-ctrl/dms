@@ -1,0 +1,84 @@
+@using DMS.Model.Documents
+@model CompareViewModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var d = Model.Document;
+    ViewData["PageTitle"] = "Compare revisions · " + d.document_number;
+    ViewData["Section"] = "Documents";
+}
+<partial name="_AdminPageTitle" />
+<style>
+    .dms-diff td { font-size: 13px; vertical-align: top; white-space: pre-wrap; }
+    .dms-diff tr.dms-added td.r { background: #e6f4ea; }
+    .dms-diff tr.dms-removed td.l { background: #fde8e8; }
+    .dms-diff mark { padding: 0 1px; background: #ffe58f; }
+    .dms-diff td.n { color: #888; width: 42px; text-align: right; }
+</style>
+
+<form method="get" asp-action="Compare" class="row g-2 align-items-end mb-3">
+    <input type="hidden" name="id" value="@d.id" />
+    <div class="col-md-3">
+        <label class="form-label small mb-1">Earlier revision</label>
+        <select name="left" class="form-select form-select-sm">@foreach (var v in Model.Versions) { <option value="@v.id" selected="@(v.id == Model.Left.id)">@v.display_revision - @v.state_name</option> }</select>
+    </div>
+    <div class="col-md-3">
+        <label class="form-label small mb-1">Later revision</label>
+        <select name="right" class="form-select form-select-sm">@foreach (var v in Model.Versions) { <option value="@v.id" selected="@(v.id == Model.Right.id)">@v.display_revision - @v.state_name</option> }</select>
+    </div>
+    <div class="col-md-2"><button class="btn btn-sm btn-primary w-100" type="submit">Compare</button></div>
+    <div class="col-md-4 text-end"><a class="btn btn-sm btn-light" asp-action="History" asp-route-id="@d.id">All revisions</a> <a class="btn btn-sm btn-light" asp-action="Details" asp-route-id="@d.id">Back to document</a></div>
+</form>
+
+<div class="card">
+    <div class="card-header"><h5 class="card-title mb-0">@d.document_number - revision @Model.Left.display_revision → @Model.Right.display_revision</h5></div>
+    <div class="card-body">
+        <table class="table table-sm table-bordered mb-0">
+            <thead class="table-light"><tr><th style="width: 22%;"></th><th>Rev @Model.Left.display_revision</th><th>Rev @Model.Right.display_revision</th></tr></thead>
+            <tbody>
+                @foreach (var m in Model.Metadata)
+                {
+                    <tr class="@(m.Left != m.Right ? "table-warning" : "")"><th class="fw-normal text-muted">@m.Field</th><td class="text-break">@m.Left</td><td class="text-break">@m.Right</td></tr>
+                }
+                <tr><th class="fw-normal text-muted">Signatures</th>
+                    <td>@foreach (var g in Model.LeftSignatures) { <div class="small">@g.signature_meaning: @g.signer_printed_name, @g.signed_at_local_display</div> }</td>
+                    <td>@foreach (var g in Model.RightSignatures) { <div class="small">@g.signature_meaning: @g.signer_printed_name, @g.signed_at_local_display</div> }</td></tr>
+            </tbody>
+        </table>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header d-flex align-items-center">
+        <h5 class="card-title mb-0 flex-grow-1">Content, line by line</h5>
+        @if (Model.ContentUnavailableReason == null)
+        {
+            <span class="badge bg-success-subtle text-success me-1">+@Model.Added added</span>
+            <span class="badge bg-danger-subtle text-danger me-1">-@Model.Removed removed</span>
+            <span class="badge bg-light text-dark">@Model.Unchanged unchanged</span>
+        }
+    </div>
+    <div class="card-body">
+        <p class="small text-muted">Rev @Model.Left.display_revision: text @Model.LeftTextSource · rev @Model.Right.display_revision: text @Model.RightTextSource. Changed words are highlighted.</p>
+        @if (Model.ContentUnavailableReason != null)
+        {
+            <div class="alert alert-info mb-0">@Model.ContentUnavailableReason</div>
+        }
+        else
+        {
+            <div class="table-responsive" style="max-height: 70vh; overflow-y: auto;">
+                <table class="table table-sm table-bordered dms-diff mb-0">
+                    <thead class="table-light"><tr><th class="n">#</th><th>Rev @Model.Left.display_revision</th><th class="n">#</th><th>Rev @Model.Right.display_revision</th></tr></thead>
+                    <tbody>
+                        @foreach (var line in Model.Lines)
+                        {
+                            <tr class="dms-@line.Kind.ToLowerInvariant()">
+                                <td class="n">@line.LeftLineNo</td><td class="l">@Html.Raw(line.LeftHtml)</td>
+                                <td class="n">@line.RightLineNo</td><td class="r">@Html.Raw(line.RightHtml)</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        }
+    </div>
+</div>

@@ -1,0 +1,71 @@
+{
+  "Database": {
+    "AutoUpgrade": true
+  },
+  "Dms": {
+    "Storage": {
+      "Root": "App_Data/filestore"
+    },
+    "Redis": {
+      "Enabled": true,
+      "InstanceName": "dms:",
+      "PdfExpirationMinutes": 10,
+      "MaxPdfCacheBytes": 52428800
+    }
+  },
+  "DocumentEditor": {
+    "Enabled": true,
+    "Provider": "COLLABORA",
+    "PublicBaseUrl": "http://host.docker.internal:5194",
+    "AllowHttpForDevelopment": false,
+    "SessionMinutes": 120,
+    "MaxFileMb": 100,
+    "Collabora": {
+      "Enabled": true,
+      "BaseUrl": "http://127.0.0.1:9981",
+      "DiscoveryUrl": "http://127.0.0.1:9981/hosting/discovery"
+    },
+    "OnlyOffice": {
+      "Enabled": true,
+      "BaseUrl": "http://localhost:8082",
+      "JwtSecret": "88971E5C6E7ADDA95F8FAE2799758EF71693FCF8CE36E3C9F8AE0713CC210931",
+      "AutomationApiEnabled": false,
+      "AllowedDownloadOrigins": [
+        "http://localhost:8082"
+      ]
+    },
+    "Spire": {
+      "Enabled": false,
+      "BaseUrl": "",
+      "AllowedDownloadOrigins": []
+    }
+  },
+  "ConnectionStrings": {
+    "Redis": "localhost:6379,abortConnect=false"
+  },
+  "Integration": {
+    "External": {
+      "PublicBaseUrl": "http://localhost:5194"
+    }
+  },
+  "EnvironmentOverrides": {
+    "Development": {
+      "DocumentEditor": {
+        "AllowHttpForDevelopment": true
+      }
+    }
+  },
+  "Infrastructure": {
+    "ai.ocr.enabled": "true",
+    "ai.ocr.apiKey": "9452CC2BDC83CF0C9249BAF8FC113712CE416E7C04E087EBC5DF4C6E73ED1F9D",
+    "ai.ocr.endpoint": "http://localhost:8091",
+    "ai.ocr.timeoutSeconds": "120",
+    "ai.ocr.languages": "eng",
+    "office.wopi.allowInsecureEditorTls": "false",
+    "office.wopi.lockMinutes": "30",
+    "ai.ocr.command": "tesseract",
+    "rendition.libreOfficePath": "",
+    "rendition.provider": "COLLABORA",
+    "rendition.collaboraUrl": "http://127.0.0.1:9981"
+  }
+}

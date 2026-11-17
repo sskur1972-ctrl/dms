@@ -1,0 +1,696 @@
+@model DMS.Web.Services.Authoring.EditorRibbonViewModel
+@* Ported unchanged from Bcl.Dms Views/Shared/_EditorRibbon.cshtml - the ribbon of wwwroot/js/dms-editor.js *@
+
+@*
+    The document editor's ribbon.
+
+    Shared by the document editor and the template editor, because a template is
+    laid out with the same tools an author uses. A template laid out in a
+    different editor would drift from what authors actually see, and QA would be
+    designing a standard against a preview rather than against the thing.
+
+    EVERY CONTROL HERE DOES SOMETHING REAL. There is no button that shows a
+    "coming soon" message and none that silently does nothing: in a validated
+    system a control that does not work is not a missing feature, it is a defect
+    waiting to be written up. Where Word has a capability this editor does not,
+    the control is absent and the gap is recorded in docs/LIMITATIONS.md §1b.
+*@
+
+<div class="dms-ribbon">
+    <div class="dms-ribbon-tabs" role="tablist" aria-label="Ribbon">
+        <button type="button" role="tab" data-dms-tab="home" aria-selected="true">Home</button>
+        <button type="button" role="tab" data-dms-tab="insert" aria-selected="false">Insert</button>
+        <button type="button" role="tab" data-dms-tab="design" aria-selected="false">Design</button>
+        <button type="button" role="tab" data-dms-tab="layout" aria-selected="false">Layout</button>
+        <button type="button" role="tab" data-dms-tab="references" aria-selected="false">References</button>
+        <button type="button" role="tab" data-dms-tab="review" aria-selected="false">Review</button>
+        <button type="button" role="tab" data-dms-tab="view" aria-selected="false">View</button>
+        <button type="button" role="tab" data-dms-tab="table-design"
+                data-dms-contextual="table" aria-selected="false" hidden>
+            Table Design
+        </button>
+        <button type="button" role="tab" data-dms-tab="table-layout"
+                data-dms-contextual="table" aria-selected="false" hidden>
+            Table Layout
+        </button>
+        <button type="button" role="tab" data-dms-tab="picture"
+                data-dms-contextual="picture" aria-selected="false" hidden>
+            Picture
+        </button>
+        @if (Model.HeaderFooterEnabled)
+        {
+            <button type="button" role="tab" data-dms-tab="headerfooter"
+                    data-dms-contextual="headerfooter" aria-selected="false" hidden>
+                Header &amp; Footer
+            </button>
+        }
+    </div>
+
+    @* ------------------------------------------------------------ Home *@
+    <div class="dms-ribbon-panel" data-dms-panel="home" role="tabpanel">
+        <div class="dms-ribbon-group">
+            <div class="dms-ribbon-row">
+                <button type="button" class="dms-editor-primary" data-dms-cmd="save" title="Save (Ctrl+S)">Save</button>
+                @if (!Model.IsTemplate)
+                {
+                    <button type="button" data-dms-cmd="save-close" title="Save and go back to the document">
+                        Save &amp; close
+                    </button>
+                }
+            </div>
+            <span class="dms-ribbon-label">File</span>
+        </div>
+
+        <div class="dms-ribbon-group">
+            <div class="dms-ribbon-row">
+                <button type="button" data-dms-cmd="undo" title="Undo (Ctrl+Z)" aria-label="Undo">&#8630;</button>
+                <button type="button" data-dms-cmd="redo" title="Redo (Ctrl+Y)" aria-label="Redo">&#8631;</button>
+                <button type="button" data-dms-cmd="format-painter"
+                        title="Copy this paragraph's formatting, then select where to apply it">Painter</button>
+            </div>
+            <span class="dms-ribbon-label">Clipboard</span>
+        </div>
+
+        <div class="dms-ribbon-group">
+            <div class="dms-ribbon-row">
+                <select data-dms-select="font" aria-label="Font">
+                    <option value="">Font…</option>
+                    <option value="Calibri">Calibri</option>
+                    <option value="Arial">Arial</option>
+                    <option value="Times New Roman">Times New Roman</option>
+                    <option value="Cambria">Cambria</option>
+                    <option value="Verdana">Verdana</option>
+                    <option value="Consolas">Consolas</option>
+                </select>
+
+                <select data-dms-select="size" aria-label="Font size">
+                    <option value="">Size…</option>
+                    <option value="8">8 pt</option>
+                    <option value="9">9 pt</option>
+                    <option value="10">10 pt</option>
+                    <option value="11">11 pt</option>
+                    <option value="12">12 pt</option>
+                    <option value="14">14 pt</option>
+                    <option value="16">16 pt</option>
+                    <option value="18">18 pt</option>
+                    <option value="20">20 pt</option>
+                    <option value="24">24 pt</option>
+                    <option value="28">28 pt</option>
+                </select>
+            </div>
+            <div class="dms-ribbon-row">
+                <button type="button" data-dms-cmd="bold" aria-pressed="false" title="Bold (Ctrl+B)"><strong>B</strong></button>
+                <button type="button" data-dms-cmd="italic" aria-pressed="false" title="Italic (Ctrl+I)"><em>I</em></button>
+                <button type="button" data-dms-cmd="underline" aria-pressed="false" title="Underline (Ctrl+U)"><u>U</u></button>
+                <button type="button" data-dms-cmd="strike" aria-pressed="false" title="Strikethrough"><s>S</s></button>
+                <button type="button" data-dms-cmd="superscript" title="Superscript">x&sup2;</button>
+                <button type="button" data-dms-cmd="subscript" title="Subscript">x&#8322;</button>
+                <input type="color" data-dms-color="text" value="#000000" title="Text colour" aria-label="Text colour" />
+                <input type="color" data-dms-color="highlight" value="#ffff00" title="Highlight" aria-label="Highlight" />
+                <button type="button" data-dms-cmd="clear-format" title="Clear all formatting">Clear</button>
+            </div>
+            <span class="dms-ribbon-label">Font</span>
+        </div>
+
+        <div class="dms-ribbon-group">
+            <div class="dms-ribbon-row">
+                <button type="button" data-dms-cmd="list-bullet" aria-pressed="false" title="Bulleted list">&bull;&#8212;</button>
+                <button type="button" data-dms-cmd="list-number" aria-pressed="false" title="Numbered list">1.&#8212;</button>
+                <button type="button" data-dms-cmd="list-legal" title="Multilevel numbering: 1, 1.1, 1.1.1">1.1</button>
+                <button type="button" data-dms-cmd="outdent" title="Decrease indent">&#8592;|</button>
+                <button type="button" data-dms-cmd="indent" title="Increase indent">|&#8594;</button>
+            </div>
+            <div class="dms-ribbon-row">
+                <button type="button" data-dms-cmd="align-left" aria-pressed="false" title="Align left">&#8676;</button>
+                <button type="button" data-dms-cmd="align-center" aria-pressed="false" title="Centre">&#8596;</button>
+                <button type="button" data-dms-cmd="align-right" aria-pressed="false" title="Align right">&#8677;</button>
+                <button type="button" data-dms-cmd="align-justify" aria-pressed="false" title="Justify">&#8801;</button>
+
+                <select data-dms-select="line-spacing" aria-label="Line spacing">
+                    <option value="">Line spacing…</option>
+                    <option value="1">Single</option>
+                    <option value="1.15">1.15</option>
+                    <option value="1.5">1.5 lines</option>
+                    <option value="2">Double</option>
+                </select>
+
+                <input type="color" data-dms-color="shading" value="#ffffff" title="Paragraph shading"
+                       aria-label="Paragraph shading" />
+                <button type="button" data-dms-cmd="border-on" title="Box this paragraph">Border</button>
+                <button type="button" data-dms-cmd="border-off" title="Remove the box">No border</button>
+            </div>
+            <span class="dms-ribbon-label">Paragraph</span>
+        </div>
+
+        <div class="dms-ribbon-group">
+            <div class="dms-ribbon-row">
+                <select data-dms-select="style" aria-label="Paragraph style">
+                    <option value="">Styles…</option>
+                    <option value="normal">Normal text</option>
+                    <option value="nospacing">No spacing</option>
+                    <option value="title">Title</option>
+                    <option value="subtitle">Subtitle</option>
+                    <option value="h1">Heading 1</option>
+                    <option value="h2">Heading 2</option>
+                    <option value="h3">Heading 3</option>
+                    <option value="h4">Heading 4</option>
+                    <option value="quote">Quotation</option>
+                    <option value="caption">Caption</option>
+                    <option value="pre">Preformatted</option>
+                </select>
+            </div>
+            <span class="dms-ribbon-label">Styles</span>
+        </div>
+
+        <div class="dms-ribbon-group">
+            <div class="dms-ribbon-row">
+                <button type="button" data-dms-cmd="find" title="Find and replace (Ctrl+F)">Find</button>
+            </div>
+            <span class="dms-ribbon-label">Editing</span>
+        </div>
+    </div>
+
+    @* ---------------------------------------------------------- Insert *@
+    <div class="dms-ribbon-panel" data-dms-panel="insert" role="tabpanel" hidden>
+        <div class="dms-ribbon-group">
+            <div class="dms-ribbon-row">
+                <button type="button" data-dms-cmd="insert-table" title="Insert a table">Table</button>
+            </div>
+            <span class="dms-ribbon-label">Tables</span>
+        </div>
+
+        <div class="dms-ribbon-group">
+            <div class="dms-ribbon-row">
+                <button type="button" data-dms-cmd="insert-image" title="Insert a picture from this computer">Picture</button>
+            </div>
+            <span class="dms-ribbon-label">Illustrations</span>
+        </div>
+
+        <div class="dms-ribbon-group">
+            <div class="dms-ribbon-row">
+                <button type="button" data-dms-cmd="insert-link" title="Insert a hyperlink (Ctrl+K)">Link</button>
+                <button type="button" data-dms-cmd="insert-caption" title="Insert a caption below a table or figure">Caption</button>
+            </div>
+            <span class="dms-ribbon-label">Links</span>
+        </div>
+
+        @if (Model.HeaderFooterEnabled)
+        {
+            <div class="dms-ribbon-group">
+                <div class="dms-ribbon-row">
+                    <button type="button" data-dms-cmd="edit-header" title="Edit the running header. Or double-click the top margin of any page, as in Word.">
+                        Header
+                    </button>
+                    <button type="button" data-dms-cmd="edit-footer" title="Edit the running footer. Or double-click the bottom margin of any page, as in Word.">
+                        Footer
+                    </button>
+                </div>
+                <span class="dms-ribbon-label">Header &amp; Footer</span>
+            </div>
+        }
+
+        <div class="dms-ribbon-group">
+            <div class="dms-ribbon-row">
+                <button type="button" data-dms-cmd="insert-pagebreak" title="Page break (Ctrl+Enter)">Page break</button>
+                <button type="button" data-dms-cmd="insert-rule" title="Horizontal line">Line</button>
+                <button type="button" data-dms-cmd="insert-symbol" title="Insert a symbol">Symbol</button>
+                <button type="button" data-dms-cmd="insert-date" title="Insert today's date as text">Date</button>
+            </div>
+            <span class="dms-ribbon-label">Symbols</span>
+        </div>
+    </div>
+
+    @* ---------------------------------------------------------- Design *@
+    <div class="dms-ribbon-panel" data-dms-panel="design" role="tabpanel" hidden>
+        <div class="dms-ribbon-group">
+            <div class="dms-ribbon-row">
+                <select data-dms-select="style-set" aria-label="Style set">
+                    <option value="DEFAULT">Default &mdash; Calibri, navy headings</option>
+                    <option value="CLASSIC">Classic &mdash; Cambria serif</option>
+                    <option value="COMPACT">Compact &mdash; Arial, 10 pt</option>
+                    <option value="PLAIN">Plain &mdash; black headings</option>
+                </select>
+            </div>
+            <span class="dms-ribbon-label">Document formatting</span>
+        </div>
+
+    </div>
+
+    @* ---------------------------------------------------------- Layout *@
+    <div class="dms-ribbon-panel" data-dms-panel="layout" role="tabpanel" hidden>
+        <div class="dms-ribbon-group">
+            <div class="dms-ribbon-row">
+                <select data-dms-select="margins" aria-label="Margins">
+                    <option value="normal">Normal &mdash; 25 mm</option>
+                    <option value="narrow">Narrow &mdash; 13 mm</option>
+                    <option value="moderate">Moderate</option>
+                    <option value="wide">Wide</option>
+                </select>
+
+                <select data-dms-select="page-size" aria-label="Paper size">
+                    <option value="A4">A4</option>
+                    <option value="A3">A3</option>
+                    <option value="LETTER">Letter</option>
+                    <option value="LEGAL">Legal</option>
+                </select>
+            </div>
+            <div class="dms-ribbon-row">
+                <button type="button" data-dms-cmd="orientation-portrait" title="Portrait">Portrait</button>
+                <button type="button" data-dms-cmd="orientation-landscape" title="Landscape">Landscape</button>
+                <button type="button" data-dms-cmd="page-setup" title="All page setup options">Page setup…</button>
+            </div>
+            <span class="dms-ribbon-label">Page setup</span>
+        </div>
+
+        <div class="dms-ribbon-group">
+            <div class="dms-ribbon-row">
+                <button type="button" data-dms-cmd="columns-1" title="One column">1 column</button>
+                <button type="button" data-dms-cmd="columns-2" title="Two columns">2</button>
+                <button type="button" data-dms-cmd="columns-3" title="Three columns">3</button>
+            </div>
+            <span class="dms-ribbon-label">Columns</span>
+        </div>
+
+        <div class="dms-ribbon-group">
+            <div class="dms-ribbon-row">
+                <select data-dms-select="space-before" aria-label="Space before">
+                    <option value="">Space before…</option>
+                    <option value="0">0 pt</option>
+                    <option value="6">6 pt</option>
+                    <option value="12">12 pt</option>
+                    <option value="18">18 pt</option>
+                </select>
+
+                <select data-dms-select="space-after" aria-label="Space after">
+                    <option value="">Space after…</option>
+                    <option value="0">0 pt</option>
+                    <option value="6">6 pt</option>
+                    <option value="12">12 pt</option>
+                    <option value="18">18 pt</option>
+                </select>
+            </div>
+            <span class="dms-ribbon-label">Paragraph</span>
+        </div>
+    </div>
+
+    @* ------------------------------------------------------ References *@
+    <div class="dms-ribbon-panel" data-dms-panel="references" role="tabpanel" hidden>
+        <div class="dms-ribbon-group">
+            <div class="dms-ribbon-row">
+                <button type="button" data-dms-cmd="insert-toc"
+                        title="Build an index from the headings in this document">
+                    Auto index
+                </button>
+                <button type="button" data-dms-cmd="update-toc"
+                        title="Rebuild the index from the current headings">
+                    Update index
+                </button>
+            </div>
+            <span class="dms-ribbon-label">Index</span>
+        </div>
+
+        <div class="dms-ribbon-group">
+            <div class="dms-ribbon-row">
+                <button type="button" data-dms-cmd="auto-number" aria-pressed="false"
+                        title="Number headings automatically as 1, 1.1, 1.1.1 and keep them in step">
+                    Automatic numbering
+                </button>
+            </div>
+            <span class="dms-ribbon-label">Numbering</span>
+        </div>
+
+        <div class="dms-ribbon-group">
+            <div class="dms-ribbon-row">
+                <button type="button" data-dms-cmd="insert-caption" title="Insert a caption">Insert caption</button>
+            </div>
+            <span class="dms-ribbon-label">Captions</span>
+        </div>
+
+    </div>
+
+    @* ---------------------------------------------------------- Review *@
+    <div class="dms-ribbon-panel" data-dms-panel="review" role="tabpanel" hidden>
+        <div class="dms-ribbon-group">
+            <div class="dms-ribbon-row">
+                <button type="button" data-dms-cmd="word-count" title="Count words, tables and figures">
+                    Word count
+                </button>
+            </div>
+            <span class="dms-ribbon-label">Proofing</span>
+        </div>
+
+        @if (!Model.IsTemplate && Model.DocumentId > 0)
+        {
+            <div class="dms-ribbon-group">
+                <div class="dms-ribbon-row">
+                    <a class="btn btn-sm btn-outline-secondary" asp-controller="Documents" asp-action="Details"
+                       asp-route-id="@Model.DocumentId" asp-fragment="comments">
+                        Review comments
+                    </a>
+                </div>
+                <span class="dms-ribbon-label">Comments</span>
+            </div>
+        }
+
+    </div>
+
+    @* ------------------------------------------------------------ View *@
+    <div class="dms-ribbon-panel" data-dms-panel="view" role="tabpanel" hidden>
+        <div class="dms-ribbon-group">
+            <div class="dms-ribbon-row">
+                <button type="button" data-dms-cmd="zoom-out" title="Zoom out">&minus;</button>
+                <span class="dms-ribbon-label" data-dms-zoom-label style="min-width:44px">100%</span>
+                <button type="button" data-dms-cmd="zoom-in" title="Zoom in">+</button>
+                <button type="button" data-dms-cmd="zoom-reset" title="Reset zoom to 100%">Reset</button>
+            </div>
+            <span class="dms-ribbon-label">Zoom</span>
+        </div>
+
+        <div class="dms-ribbon-group">
+            <div class="dms-ribbon-row">
+                <button type="button" data-dms-cmd="toggle-marks" title="Show or hide paragraph marks">&para;</button>
+                <button type="button" data-dms-cmd="toggle-navigation" aria-pressed="false"
+                        title="Show the navigation pane - the document's headings, click to jump">
+                    Navigation
+                </button>
+            </div>
+            <span class="dms-ribbon-label">Show</span>
+        </div>
+    </div>
+
+    @* ---------------------------------------------------- Table Design *@
+    <div class="dms-ribbon-panel" data-dms-panel="table-design" role="tabpanel" hidden>
+        <div class="dms-ribbon-group">
+            <div class="dms-ribbon-row">
+                <button type="button" data-dms-cmd="header-row"
+                        title="Make the first row a header row - it repeats at the top of every page">
+                    Header row
+                </button>
+                <button type="button" data-dms-cmd="table-borders" title="Show or hide the table's borders">
+                    Borders
+                </button>
+            </div>
+            <span class="dms-ribbon-label">Table style</span>
+        </div>
+
+        <div class="dms-ribbon-group">
+            <div class="dms-ribbon-row">
+                <input type="color" data-dms-color="cell" value="#EEF2F7" title="Cell shading"
+                       aria-label="Cell shading" />
+            </div>
+            <span class="dms-ribbon-label">Shading</span>
+        </div>
+    </div>
+
+    @* ---------------------------------------------------- Table Layout *@
+    <div class="dms-ribbon-panel" data-dms-panel="table-layout" role="tabpanel" hidden>
+        <div class="dms-ribbon-group">
+            <div class="dms-ribbon-row">
+                <button type="button" data-dms-cmd="row-above" title="Insert a row above">Row &#8593;</button>
+                <button type="button" data-dms-cmd="row-below" title="Insert a row below">Row &#8595;</button>
+                <button type="button" data-dms-cmd="delete-row" title="Delete this row">&minus; Row</button>
+            </div>
+            <div class="dms-ribbon-row">
+                <button type="button" data-dms-cmd="column-left" title="Insert a column to the left">Col &#8592;</button>
+                <button type="button" data-dms-cmd="column-right" title="Insert a column to the right">Col &#8594;</button>
+                <button type="button" data-dms-cmd="delete-column" title="Delete this column">&minus; Col</button>
+            </div>
+            <span class="dms-ribbon-label">Rows &amp; columns</span>
+        </div>
+
+        <div class="dms-ribbon-group">
+            <div class="dms-ribbon-row">
+                <button type="button" data-dms-cmd="merge-right" title="Merge this cell with the one to its right">
+                    Merge &#8594;
+                </button>
+                <button type="button" data-dms-cmd="merge-down" title="Merge this cell with the one below">
+                    Merge &#8595;
+                </button>
+                <button type="button" data-dms-cmd="split-cell" title="Split a merged cell">Split</button>
+            </div>
+            <span class="dms-ribbon-label">Merge</span>
+        </div>
+
+        <div class="dms-ribbon-group">
+            <div class="dms-ribbon-row">
+                <button type="button" data-dms-cmd="column-width" title="Set this column's width">Width…</button>
+                <button type="button" data-dms-cmd="cell-top" title="Align cell content to the top">Top</button>
+                <button type="button" data-dms-cmd="cell-middle" title="Align cell content to the middle">Middle</button>
+                <button type="button" data-dms-cmd="cell-bottom" title="Align cell content to the bottom">Bottom</button>
+            </div>
+            <span class="dms-ribbon-label">Cell size &amp; alignment</span>
+        </div>
+
+        <div class="dms-ribbon-group">
+            <div class="dms-ribbon-row">
+                <button type="button" data-dms-cmd="delete-table" title="Delete the whole table">Delete table</button>
+            </div>
+            <span class="dms-ribbon-label">Table</span>
+        </div>
+    </div>
+
+    @* ------------------------------------------------ Header & Footer *@
+    @*
+        Shown only while a header or footer is open, exactly as Word's tab is.
+        Everything on it acts on the band being edited on the page - there is no
+        dialog, because a dialog is not how anybody who uses Word expects to put
+        a logo in a footer.
+    *@
+    @if (Model.HeaderFooterEnabled)
+    {
+        <div class="dms-ribbon-panel" data-dms-panel="headerfooter" role="tabpanel" hidden>
+            <div class="dms-ribbon-group">
+                <div class="dms-ribbon-row">
+                    <span class="dms-hf-where" data-dms-hf-where>Not in a header or footer</span>
+                </div>
+                <div class="dms-ribbon-row">
+                    <button type="button" data-dms-cmd="hf-goto-header" title="Go to the header of this page">
+                        Go to header
+                    </button>
+                    <button type="button" data-dms-cmd="hf-goto-footer" title="Go to the footer of this page">
+                        Go to footer
+                    </button>
+                </div>
+                <div class="dms-ribbon-row">
+                    <button type="button" data-dms-cmd="hf-previous-page" title="The same band on the previous page">
+                        &#8592; Previous
+                    </button>
+                    <button type="button" data-dms-cmd="hf-next-page" title="The same band on the next page">
+                        Next &#8594;
+                    </button>
+                </div>
+                <span class="dms-ribbon-label">Navigation</span>
+            </div>
+
+            <div class="dms-ribbon-group">
+                <div class="dms-ribbon-row">
+                    <button type="button" data-dms-cmd="insert-image" title="Insert a picture here">Picture</button>
+                    <button type="button" data-dms-cmd="insert-table" title="Insert a table here">Table</button>
+                    <button type="button" data-dms-cmd="insert-date" title="Insert today's date as text">Date</button>
+                </div>
+                <div class="dms-ribbon-row">
+                    <button type="button" data-dms-cmd="align-left" title="Align left">Left</button>
+                    <button type="button" data-dms-cmd="align-center" title="Centre">Centre</button>
+                    <button type="button" data-dms-cmd="align-right" title="Align right">Right</button>
+                </div>
+                <span class="dms-ribbon-label">Insert &amp; align</span>
+            </div>
+
+            <div class="dms-ribbon-group">
+                <div class="dms-ribbon-row">
+                    <label class="dms-ribbon-check">
+                        <input type="checkbox" data-dms-field="showPageNumbers" /> Page numbers
+                    </label>
+                    <select data-dms-field="pageNumberPosition" aria-label="Page number position">
+                        <option value="FOOTER_CENTER">Footer, centred</option>
+                        <option value="FOOTER_RIGHT">Footer, right</option>
+                        <option value="FOOTER_LEFT">Footer, left</option>
+                        <option value="HEADER_RIGHT">Header, right</option>
+                        <option value="HEADER_CENTER">Header, centred</option>
+                        <option value="HEADER_LEFT">Header, left</option>
+                    </select>
+                    <select data-dms-field="pageNumberFormat" aria-label="Page number format">
+                        <option value="PAGE_X_OF_Y">Page 3 of 11</option>
+                        <option value="PAGE_X">Page 3</option>
+                        <option value="PLAIN_X">3</option>
+                    </select>
+                </div>
+                <span class="dms-ribbon-label">Page number</span>
+            </div>
+
+            <div class="dms-ribbon-group">
+                <div class="dms-ribbon-row">
+                    <label class="dms-ribbon-check"
+                           title="A title page usually carries its own header, or none">
+                        <input type="checkbox" data-dms-field="differentFirstPage" /> Different first page
+                    </label>
+                </div>
+                <div class="dms-ribbon-row">
+                    <label class="dms-ribbon-check"
+                           title="A bound document reads as a spread: the even pages are the left-hand leaves">
+                        <input type="checkbox" data-dms-field="differentOddEven" /> Different odd &amp; even
+                    </label>
+                </div>
+                <span class="dms-ribbon-label">Options</span>
+            </div>
+
+            <div class="dms-ribbon-group">
+                <div class="dms-ribbon-row">
+                    <label class="dms-ribbon-field">
+                        Header from top (mm)
+                        <input type="number" step="0.5" min="0" max="100" data-dms-field="headerDistance" />
+                    </label>
+                </div>
+                <div class="dms-ribbon-row">
+                    <label class="dms-ribbon-field">
+                        Footer from bottom (mm)
+                        <input type="number" step="0.5" min="0" max="100" data-dms-field="footerDistance" />
+                    </label>
+                </div>
+                <span class="dms-ribbon-label">Position</span>
+            </div>
+
+            <div class="dms-ribbon-group">
+                <div class="dms-ribbon-row">
+                    <button type="button" class="btn btn-sm btn-primary"
+                            data-dms-cmd="hf-apply-settings" title="Apply these options">Apply options</button>
+                </div>
+                <div class="dms-ribbon-row">
+                    <button type="button" data-dms-cmd="hf-remove-header"
+                            title="Remove the header from every page">Remove header</button>
+                    <button type="button" data-dms-cmd="hf-remove-footer"
+                            title="Remove the footer from every page">Remove footer</button>
+                </div>
+                <div class="dms-ribbon-row">
+                    <button type="button" class="btn btn-sm btn-outline-secondary"
+                            data-dms-cmd="hf-close" title="Back to the document body (Escape)">
+                        Close header &amp; footer
+                    </button>
+                </div>
+                <span class="dms-ribbon-label">Close</span>
+            </div>
+        </div>
+    }
+
+    @* --------------------------------------------------------- Picture *@
+    @*
+        Shown only while a picture is selected. The size boxes carry CSS pixels
+        because that is the unit the .docx writer converts to EMU, so the number
+        an author types here is the number Word lays the picture out at - not an
+        approximation of it.
+    *@
+    <div class="dms-ribbon-panel" data-dms-panel="picture" role="tabpanel" hidden>
+        <div class="dms-ribbon-group">
+            <div class="dms-ribbon-row">
+                <label class="dms-ribbon-field">
+                    Width
+                    <input type="number" min="8" max="4000" step="1" data-dms-picture="width"
+                           aria-label="Picture width in pixels" />
+                </label>
+                <label class="dms-ribbon-field">
+                    Height
+                    <input type="number" min="8" max="4000" step="1" data-dms-picture="height"
+                           aria-label="Picture height in pixels" />
+                </label>
+                <button type="button" data-dms-cmd="picture-apply-size" title="Apply this size">Apply</button>
+            </div>
+            <div class="dms-ribbon-row">
+                <label class="dms-ribbon-check" title="Keep the picture's proportions when one side changes">
+                    <input type="checkbox" data-dms-picture="lock" checked /> Lock ratio
+                </label>
+                <button type="button" data-dms-cmd="picture-reset-size" title="Back to the picture's own size">
+                    Original size
+                </button>
+            </div>
+            <span class="dms-ribbon-label">Size (pixels)</span>
+        </div>
+
+        <div class="dms-ribbon-group">
+            <div class="dms-ribbon-row">
+                <button type="button" data-dms-cmd="picture-align-left" title="Align the picture left">Left</button>
+                <button type="button" data-dms-cmd="picture-align-center" title="Centre the picture">Centre</button>
+                <button type="button" data-dms-cmd="picture-align-right" title="Align the picture right">Right</button>
+            </div>
+            <span class="dms-ribbon-label">Position</span>
+        </div>
+
+        <div class="dms-ribbon-group">
+            <div class="dms-ribbon-row">
+                <button type="button" data-dms-cmd="picture-replace" title="Replace with another picture, same width">
+                    Replace…
+                </button>
+                <button type="button" data-dms-cmd="picture-delete" title="Delete this picture">Delete</button>
+            </div>
+            <span class="dms-ribbon-label">Picture</span>
+        </div>
+
+        <div class="dms-ribbon-group">
+            <div class="dms-ribbon-row">
+                <label class="dms-ribbon-field">
+                    Alt text
+                    <input type="text" maxlength="512" data-dms-picture="alt"
+                           aria-label="Alternative text describing the picture" />
+                </label>
+                <button type="button" data-dms-cmd="picture-alt" title="Save the alternative text">Set</button>
+            </div>
+            <span class="dms-ribbon-label">Accessibility</span>
+        </div>
+
+    </div>
+</div>
+
+@* ------------------------------------------------------- panels below the ribbon *@
+
+<div class="dms-symbol-palette" data-dms-symbols hidden></div>
+
+<div class="dms-editor-dialog" data-dms-pagesetup hidden>
+    <label>Paper
+        <select data-dms-field="pageSize">
+            <option value="A4">A4</option>
+            <option value="A3">A3</option>
+            <option value="LETTER">Letter</option>
+            <option value="LEGAL">Legal</option>
+        </select>
+    </label>
+
+    <label>Orientation
+        <select data-dms-field="orientation">
+            <option value="portrait">Portrait</option>
+            <option value="landscape">Landscape</option>
+        </select>
+    </label>
+
+    <label>Columns
+        <select data-dms-field="columns">
+            <option value="1">1</option>
+            <option value="2">2</option>
+            <option value="3">3</option>
+        </select>
+    </label>
+
+    <label>Top (mm)<input type="number" step="0.5" min="0" max="100" data-dms-field="marginTop" /></label>
+    <label>Bottom (mm)<input type="number" step="0.5" min="0" max="100" data-dms-field="marginBottom" /></label>
+    <label>Left (mm)<input type="number" step="0.5" min="0" max="100" data-dms-field="marginLeft" /></label>
+    <label>Right (mm)<input type="number" step="0.5" min="0" max="100" data-dms-field="marginRight" /></label>
+    <label title="Extra space on the binding edge for a document that will be filed in a folder">
+        Gutter (mm)<input type="number" step="0.5" min="0" max="50" data-dms-field="gutter" />
+    </label>
+
+    <button type="button" class="btn btn-sm btn-primary" data-dms-cmd="page-setup-apply">Apply</button>
+    <button type="button" class="btn btn-sm btn-outline-secondary" data-dms-cmd="page-setup-cancel">Cancel</button>
+</div>
+
+
+<div class="dms-editor-find" data-dms-editor-find hidden>
+    <label class="mb-0" for="dms-find-term">Find</label>
+    <input type="text" id="dms-find-term" data-dms-find-term autocomplete="off" />
+
+    <label class="mb-0" for="dms-find-replacement">Replace with</label>
+    <input type="text" id="dms-find-replacement" data-dms-find-replacement autocomplete="off" />
+
+    <button type="button" class="btn btn-sm btn-outline-secondary" data-dms-find-action="next">Find next</button>
+    <button type="button" class="btn btn-sm btn-outline-secondary" data-dms-find-action="replace-all">Replace all</button>
+    <button type="button" class="btn btn-sm btn-outline-secondary" data-dms-find-action="close">Close</button>
+
+    <span class="dms-editor-find-result" data-dms-find-result></span>
+</div>

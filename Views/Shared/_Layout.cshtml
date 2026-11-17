@@ -1,0 +1,807 @@
+@{
+    // Common portal cookies need not contain DMS notification claims.
+    // Notifications are loaded independently from the shared layout.
+    var displayname = User.FindFirst("displayName")?.Value ?? User.Identity?.Name ?? string.Empty;
+    var _permissionList = User.FindFirst("serializedPermissionList")?.Value ?? string.Empty;
+}
+
+<style>
+
+    @@media print {
+        html, body {
+            display: none !important;
+        }
+    }
+
+    .screenshot-blocked {
+        filter: blur(20px);
+        user-select: none;
+    }
+</style>
+
+<!doctype html>
+<html lang="en" data-layout="vertical" data-topbar="light" data-sidebar="gradient" data-sidebar-size="lg" data-sidebar-image="none" data-preloader="disable" data-layout-mode="light" data-layout-width="fluid" data-layout-position="fixed" data-layout-style="default">
+
+<head>
+
+    <meta charset="utf-8" />
+    <title>DMS - Document Management System</title>
+    <!-- App favicon -->
+    <link rel="shortcut icon" href="~/assets/images/favicon.ico">
+    <!-- Layout config Js -->
+    <script src="~/assets/js/layout.js"></script>
+    <script src="~/assets/libs/choices.js/public/assets/scripts/choices.min.js"></script>
+    <!-- Bootstrap Css -->
+    <link href="~/assets/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+    <!-- Icons Css -->
+    <link href="~/assets/css/icons.min.css" rel="stylesheet" type="text/css" />
+    <!-- App Css-->
+    <link href="~/assets/css/app.min.css" asp-append-version="true" rel="stylesheet" type="text/css" />
+    @* <link href="~/assets/libs/choices.js/public/assets/styles/choices.min.css" rel="stylesheet" type="text/css" />
+    <script src="~/assets/libs/choices.js/public/assets/scripts/choices.min.js"></script>  *@
+    <!-- custom Css-->
+    <link href="~/assets/css/custom.min.css" rel="stylesheet" type="text/css" />
+    <!-- Correct path to your CSS file -->
+    <link rel="stylesheet"
+          href="~/lib/bootstrap-icons/font/bootstrap-icons.min.css" asp-append-version="true">
+    <link rel="stylesheet" href="~/css/application-loader.css" asp-append-version="true" />
+
+
+
+    <script src="~/assets/js/pages/jquery-3.6.0.min.js"></script>
+    <script>
+        //Auto Logout
+        let logoutTimer;
+        const idleTimeout = 15 * 60 * 1000; // 15 minutes in milliseconds
+
+        function resetLogoutTimer() {
+            clearTimeout(logoutTimer);
+            logoutTimer = setTimeout(logout, idleTimeout);
+        }
+
+        function logout() {
+            window.location.href = '/Account/Logout'; // Redirect to the logout action
+        }
+
+        document.addEventListener("dms:editor-activity", resetLogoutTimer);
+        window.onload = resetLogoutTimer;
+        document.onmousemove = resetLogoutTimer;
+        document.onkeypress = resetLogoutTimer;
+        document.onscroll = resetLogoutTimer;
+    </script>
+
+    <script type="text/javascript" language="javascript">
+        function DisableBackButton() {
+            window.history.forward()
+        }
+        DisableBackButton();
+        window.onload = DisableBackButton;
+        window.onpageshow = function (evt) { if (evt.persisted) DisableBackButton() }
+        window.onunload = function () { void (0) }
+    </script>
+
+    <script src="~/js/disable-print.js"></script>
+
+</head>
+
+<body class="@(ViewData["EditorWorkspace"] as bool? == true ? "dms-editor-workspace" : "")">
+    <script src="~/js/application-loader.js" asp-append-version="true"></script>
+
+    <!-- Begin page -->
+    <div id="layout-wrapper">
+
+        <header id="page-topbar">
+            <div class="layout-width">
+                <div class="navbar-header">
+                    <div class="d-flex">
+                        <br/>
+                        <div>
+                            <h5 style="font-weight:700; color:#1F2937; margin-bottom:2px;">Welcome back, @displayname</h5>
+                            <span style="font-size:13px; color:#8A9A96;">Here's what's happening with your batch records today.</span>
+                        </div>
+                    </div>
+
+                    <div class="d-flex align-items-center">
+                        <div class="ms-1 header-item d-none d-sm-flex">
+                            <button type="button" class="btn btn-icon btn-topbar btn-ghost-secondary rounded-circle" data-toggle="fullscreen">
+                                <i class='bx bx-fullscreen fs-22'></i>
+                            </button>
+                        </div>
+
+
+                        <div class="dropdown topbar-head-dropdown ms-1 header-item">
+                            <a title="Home" asp-controller="Home" asp-action="Index" class="btn btn-icon btn-topbar btn-ghost-secondary rounded-circle" id="page-header-notifications-dropdown" data-bs-auto-close="outside" aria-haspopup="true" aria-expanded="false">
+                                <i class="bx ri-home-4-line fs-22"></i>
+                            </a>
+                        </div>
+
+
+                        <div class="dropdown ms-sm-3 header-item topbar-user">
+                            <button type="button" class="btn" id="page-header-user-dropdown" data-bs-toggle="dropdown" aria-haspopup="true" aria-expanded="false">
+                                <span class="d-flex align-items-center">
+                                    <img class="rounded-circle header-profile-user" src="~/assets/images/users/user-dummy-img.jpg" alt="Header Avatar">
+                                    <span class="text-start ms-xl-2">
+                                        <span class="d-none d-xl-inline-block ms-1 fw-medium user-name-text">@displayname</span>
+
+                                    </span>
+                                </span>
+                            </button>
+                            <div class="dropdown-menu dropdown-menu-end">
+                                <h6 class="dropdown-header">Welcome @displayname!</h6>
+                               @*  <a class="dropdown-item" asp-controller="Account" asp-action="NotificationIndex"><i class="mdi mdi-logout text-muted fs-16 align-middle me-1"></i> <span class="align-middle" data-key="t-logout">Notification</span></a>*@
+                                <a class="dropdown-item" asp-controller="Account" asp-action="NotificationIndex"><i class="mdi mdi-logout text-muted fs-16 align-middle me-1"></i> <span class="align-middle" data-key="t-logout">Notification</span> <span id="notificationBadge" class="badge bg-danger rounded-pill ms-1" style="display:none;"></span></a>
+                               <a class="dropdown-item" asp-controller="Account" asp-action="LogOut"><i class="mdi mdi-logout text-muted fs-16 align-middle me-1"></i> <span class="align-middle" data-key="t-logout">Logout</span></a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </header>
+        <input hidden id="removeNotificationModal" />
+
+        <!-- ========== App Menu ========== -->
+        <div class="app-menu navbar-menu" style="background:linear-gradient(to right, #10241E, #0D7C66)">
+            <!-- LOGO -->
+            <div class="navbar-brand-box">
+                <!-- Dark Logo-->
+                <a asp-controller="Home" asp-action="Index" class="logo logo-dark">
+                    <span class="logo-sm">
+                        <img src="~/assets/images/propix.png" alt="Logo" height="22">
+                    </span>
+                    <span class="logo-lg">
+                        <img src="/assets/images/propix.png" alt="" height="60">
+                    </span>
+                </a>
+                <!-- Light Logo-->
+                <a asp-controller="Home" asp-action="Index" class="logo logo-light">
+                    <span class="logo-sm">
+                        <img src="~/assets/images/propix.png" alt="" height="22">
+                    </span>
+                    <span class="logo-lg">
+                        <img src="/assets/images/propix.png" alt="" height="60">
+                    </span>
+                </a>
+                <button type="button" class="btn btn-sm p-0 fs-20 header-item float-end btn-vertical-sm-hover" id="vertical-hover">
+                    <i class="ri-record-circle-line"></i>
+                </button>
+            </div>
+
+            <div id="scrollbar">
+                <div class="container-fluid">
+
+                    <div id="two-column-menu">
+                    </div>
+                    <ul class="navbar-nav" id="navbar-nav">
+
+                        <li class="mt-2">
+                            <a class="nav-link" asp-controller="Home" asp-action="Index" aria-expanded="false">
+                                <i class="ri-apps-2-line"></i>
+                                <span class="nav-text">Dashboard</span>
+                            </a>
+                        </li>
+
+                        @if (_permissionList != null)
+                        {
+                            if (_permissionList.Contains("\"View User\"") || _permissionList.Contains("\"View Role\"") || _permissionList.Contains("\"View Permission\""))
+
+                            {
+                                <li class="nav-item">
+                                    <a class="nav-link menu-link" href="#AuditMgmt" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="sidebarProcurement">
+                                        <i class="ri-clipboard-line"></i><span data-key="t-dashboards">Audit Management</span>
+                                    </a>
+
+                                    <div class="collapse menu-dropdown" id="AuditMgmt">
+                                        <ul class="nav nav-sm flex-column">
+
+
+
+                                            <li class="nav-item">
+                                                <a class="nav-link" asp-controller="AuditTrail" asp-action="Index" asp-route-Id="@User.Claims.FirstOrDefault(c => c.Type == "UserID")?.Value">Audit Logs</a>
+                                            </li>
+
+                                        </ul>
+                                    </div>
+                                </li>
+                            }
+                        }
+
+                       
+
+                        @* Phase 3 - Documents *@
+                        @if (_permissionList != null && (_permissionList.Contains("\"View documents\"") || _permissionList.Contains("\"Create document\"")))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link menu-link" href="#DocMgmt" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="DocMgmt">
+                                    <i class="ri-file-list-3-line"></i> <span data-key="t-documents">Documents</span>
+                                </a>
+                                <div class="collapse menu-dropdown" id="DocMgmt">
+                                    <ul class="nav nav-sm flex-column">
+                                        @if (_permissionList.Contains("\"View documents\""))
+                                        {
+                                            <li class="nav-item"><a class="nav-link" asp-controller="Documents" asp-action="Index">Document Register</a></li>
+                                            <li class="nav-item"><a class="nav-link" asp-controller="Documents" asp-action="Index" asp-route-pending="true">Pending With Me</a></li>
+                                            @if (_permissionList != null && _permissionList.Contains("\"Manage document links\""))
+                                            {
+                                                <li class="nav-item"><a class="nav-link" asp-controller="Documents" asp-action="Impact">Impact Review</a></li>
+                                            }
+                                        }
+                                        @if (_permissionList.Contains("\"Create document\""))
+                                        {
+                                            <li class="nav-item"><a class="nav-link" asp-controller="Documents" asp-action="Create">New Document</a></li>
+                                        }
+                                    </ul>
+                                </div>
+                            </li>
+                        }
+
+                        @* Phase 5a - Controlled print *@
+                        @if (_permissionList != null && DMS.Web.CommonUtils.PrintPermissions.All.Any(p => _permissionList.Contains("\"" + p + "\"")))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link menu-link" href="#PrintMgmt" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="PrintMgmt">
+                                    <i class="ri-printer-line"></i> <span data-key="t-print">Controlled Print</span>
+                                </a>
+                                <div class="collapse menu-dropdown" id="PrintMgmt">
+                                    <ul class="nav nav-sm flex-column">
+                                        <li class="nav-item"><a class="nav-link" asp-controller="Print" asp-action="Index">Print Requests</a></li>
+                                        @if (_permissionList.Contains("\"" + DMS.Web.CommonUtils.PrintPermissions.Issue + "\"") || _permissionList.Contains("\"" + DMS.Web.CommonUtils.PrintPermissions.Log + "\""))
+                                        {
+                                            <li class="nav-item"><a class="nav-link" asp-controller="Print" asp-action="Retrieve">Copies to Retrieve</a></li>
+                                        }
+                                        @if (_permissionList.Contains("\"" + DMS.Web.CommonUtils.PrintPermissions.Log + "\""))
+                                        {
+                                            <li class="nav-item"><a class="nav-link" asp-controller="Print" asp-action="Log">Print Log</a></li>
+                                        }
+                                    </ul>
+                                </div>
+                            </li>
+                        }
+
+                        @* Phase 5b - Compliance: audit trail review, reports, legacy import *@
+                        @if (_permissionList != null && DMS.Web.CommonUtils.CompliancePermissions.All.Any(p => _permissionList.Contains("\"" + p + "\"")))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link menu-link" href="#ComplianceMgmt" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="ComplianceMgmt">
+                                    <i class="ri-shield-check-line"></i> <span data-key="t-compliance">Compliance</span>
+                                </a>
+                                <div class="collapse menu-dropdown" id="ComplianceMgmt">
+                                    <ul class="nav nav-sm flex-column">
+                                        @if (_permissionList.Contains("\"" + DMS.Web.CommonUtils.CompliancePermissions.AuditView + "\""))
+                                        {
+                                            <li class="nav-item"><a class="nav-link" asp-controller="AuditReview" asp-action="Index">Audit Trail Review</a></li>
+                                            <li class="nav-item"><a class="nav-link" asp-controller="AuditReview" asp-action="Reviews">Recorded Reviews</a></li>
+                                        }
+                                        @if (_permissionList.Contains("\"" + DMS.Web.CommonUtils.CompliancePermissions.ReportView + "\""))
+                                        {
+                                            <li class="nav-item"><a class="nav-link" asp-controller="Reports" asp-action="Index">Reports</a></li>
+                                        }
+                                        @if (_permissionList.Contains("\"" + DMS.Web.CommonUtils.CompliancePermissions.LegacyImport + "\""))
+                                        {
+                                            <li class="nav-item"><a class="nav-link" asp-controller="LegacyImport" asp-action="Index">Legacy Master Import</a></li>
+                                        }
+                                    </ul>
+                                </div>
+                            </li>
+                        }
+
+                        @* Phase 2 - Administration masters *@
+                        @if (_permissionList != null && DMS.Web.CommonUtils.AdminPermissions.All.Any(p => _permissionList.Contains("\"" + p + "\"")))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link menu-link" href="#AdminMgmt" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="AdminMgmt">
+                                    <i class="ri-settings-3-line"></i> <span data-key="t-admin">Administration</span>
+                                </a>
+                                <div class="collapse menu-dropdown" id="AdminMgmt">
+                                    <ul class="nav nav-sm flex-column">
+                                        @if (_permissionList.Contains("\"" + DMS.Web.CommonUtils.AdminPermissions.Department + "\""))
+                                        {
+                                            <li class="nav-item"><a class="nav-link" asp-controller="Department" asp-action="Index">Departments</a></li>
+                                        }
+                                        @if (_permissionList.Contains("\"" + DMS.Web.CommonUtils.AdminPermissions.DocumentType + "\""))
+                                        {
+                                            <li class="nav-item"><a class="nav-link" asp-controller="DocumentType" asp-action="Index">Document Types</a></li>
+                                        }
+                                        @if (_permissionList.Contains("\"" + DMS.Web.CommonUtils.AdminPermissions.Template + "\""))
+                                        {
+                                            <li class="nav-item"><a class="nav-link" asp-controller="Template" asp-action="Index">Document Templates</a></li>
+                                        }
+                                        @if (_permissionList.Contains("\"" + DMS.Web.CommonUtils.AdminPermissions.Numbering + "\""))
+                                        {
+                                            <li class="nav-item"><a class="nav-link" asp-controller="DocumentType" asp-action="NumberingRules">Numbering Rules</a></li>
+                                        }
+                                        @if (_permissionList.Contains("\"" + DMS.Web.CommonUtils.AdminPermissions.Workflow + "\""))
+                                        {
+                                            <li class="nav-item"><a class="nav-link" asp-controller="Workflow" asp-action="Index">Workflow Configuration</a></li>
+                                        }
+                                        @if (_permissionList.Contains("\"" + DMS.Web.CommonUtils.AdminPermissions.AccessMatrix + "\""))
+                                        {
+                                            <li class="nav-item"><a class="nav-link" asp-controller="AccessRule" asp-action="Index">Access Matrix</a></li>
+                                        }
+                                        @if (_permissionList.Contains("\"" + DMS.Web.CommonUtils.AdminPermissions.ChangeReason + "\""))
+                                        {
+                                            <li class="nav-item"><a class="nav-link" asp-controller="ChangeReason" asp-action="Index">Reasons for Change</a></li>
+                                        }
+                                        @if (_permissionList.Contains("\"" + DMS.Web.CommonUtils.AdminPermissions.RejectionReason + "\""))
+                                        {
+                                            <li class="nav-item"><a class="nav-link" asp-controller="RejectionReason" asp-action="Index">Rejection Reasons</a></li>
+                                        }
+                                        @if (_permissionList.Contains("\"" + DMS.Web.CommonUtils.AdminPermissions.Printer + "\""))
+                                        {
+                                            <li class="nav-item"><a class="nav-link" asp-controller="Printer" asp-action="Index">Printers</a></li>
+                                        }
+                                        @if (_permissionList.Contains("\"" + DMS.Web.CommonUtils.AdminPermissions.ComplianceRule + "\""))
+                                        {
+                                            <li class="nav-item"><a class="nav-link" asp-controller="ComplianceRule" asp-action="Index">Advisory Review Rules</a></li>
+                                        }
+                                        @if (_permissionList.Contains("\"" + DMS.Web.CommonUtils.AdminPermissions.ChangeControl + "\""))
+                                        {
+                                            <li class="nav-item"><a class="nav-link" asp-controller="ChangeControl" asp-action="Index">Change Control Register</a></li>
+                                        }
+                                        @if (_permissionList.Contains("\"" + DMS.Web.CommonUtils.AdminPermissions.SystemConfig + "\""))
+                                        {
+                                            <li class="nav-item"><a class="nav-link" asp-controller="SystemConfig" asp-action="Index">System Configuration</a></li>
+                                        }
+                                        @if (_permissionList.Contains("\"" + DMS.Web.CommonUtils.AdminPermissions.SystemConfig + "\""))
+                                        {
+                                            <li class="nav-item"><a class="nav-link" asp-controller="OfficeEditor" asp-action="Index">Office Editor Providers</a></li>
+                                        }
+                                        @if (_permissionList.Contains("\"" + DMS.Web.CommonUtils.AdminPermissions.SystemConfig + "\"") || _permissionList.Contains("\"Manage PDF rendition\""))
+                                        {
+                                            <li class="nav-item"><a class="nav-link" asp-controller="RenditionAdmin" asp-action="Index">PDF Rendition</a></li>
+                                        }
+                                        @if (_permissionList.Contains("\"" + DMS.Web.CommonUtils.AdminPermissions.SystemConfig + "\""))
+                                        {
+                                            <li class="nav-item"><a class="nav-link" asp-controller="Scheduler" asp-action="Index">Scheduler &amp; E-mail</a></li>
+                                        }
+                                        @if (_permissionList.Contains("\"" + DMS.Web.CommonUtils.AdminPermissions.Backup + "\""))
+                                        {
+                                            <li class="nav-item"><a class="nav-link" asp-controller="Backup" asp-action="Index">Backups</a></li>
+                                        }
+                                    </ul>
+                                </div>
+                            </li>
+                        }
+
+                        @if (_permissionList != null && _permissionList.Contains("\"View documents\""))
+                        {
+                            <li class="nav-item">
+                                <a class="nav-link menu-link" href="#AiFeatures" data-bs-toggle="collapse" role="button" aria-expanded="false" aria-controls="AiFeatures">
+                                    <i class="ri-magic-line"></i><span>AI Features</span>
+                                </a>
+                                <div class="collapse menu-dropdown" id="AiFeatures">
+                                    <ul class="nav nav-sm flex-column">
+                                        <li class="nav-item"><a class="nav-link" asp-controller="Intelligence" asp-action="Tools">OCR &amp; Converters</a></li>
+                                        <li class="nav-item"><a class="nav-link" asp-controller="Intelligence" asp-action="Search">Smart Search</a></li>
+                                    </ul>
+                                </div>
+                            </li>
+                        }
+
+                    </ul>
+                </div>
+                <!-- Sidebar -->
+            </div>
+
+            <div class="sidebar-background"></div>
+        </div>
+        <!-- Left Sidebar End -->
+        <!-- Vertical Overlay-->
+        <div class="vertical-overlay"></div>
+
+        <!-- ============================================================== -->
+        <!-- Start right Content here -->
+        <!-- ============================================================== -->
+        <div class="main-content">
+
+            <div class="page-content">
+                <div class="container-fluid">
+                    <partial name="_Notification" />
+                    @if (DMS.Web.Services.DatabaseUpgrader.Problem is { } dbProblem)
+                    {
+                        <div class="alert alert-danger mt-3" role="alert"><strong>Database not up to date.</strong> @dbProblem</div>
+                    }
+                    @RenderBody()
+
+                </div>
+                <!-- container-fluid -->
+            </div>
+            <!-- End Page-content -->
+
+            <footer class="footer">
+                <div class="container-fluid">
+                    <div class="row">
+                        <div class="col-sm-6">
+                            <!-- @*<script>document.write(new Date().getFullYear())</script> © Propix.*@ -->
+                        </div>
+                        <div class="col-sm-6">
+                            <div class="text-sm-end d-none d-sm-block" style="margin-top: 10px;">
+                                Powered By <a href="https://www.propixtech.com/" target="_blank">© Propix Technologies Pvt Ltd.</a>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </footer>
+
+        </div>
+        <!-- end main content-->
+
+    </div>
+    <!-- END layout-wrapper -->
+    <!--start back-to-top-->
+    <button onclick="topFunction()" class="btn btn-icon" id="back-to-top" style="background-color:#0D7C66; border-color:#0D7C66; color:#fff;">
+        <i class="ri-arrow-up-line"></i>
+    </button>
+    <!--end back-to-top-->
+    <!--preloader-->
+    <div id="preloader">
+        <div id="status">
+            <div class="spinner-border text-primary avatar-sm" role="status">
+                <span class="visually-hidden">Loading...</span>
+            </div>
+        </div>
+    </div>
+
+    <div class="modal fade" id="printRestrictionModal" tabindex="-1"
+         aria-labelledby="printRestrictionModalLabel" aria-hidden="true">
+
+        <div class="modal-dialog modal-dialog-centered">
+
+            <div class="modal-content">
+
+                <div class="modal-header">
+                    <h5 class="modal-title" id="printRestrictionModalLabel">
+                        Printing Restricted
+                    </h5>
+
+                    <button type="button"
+                            class="btn-close"
+                            data-bs-dismiss="modal"
+                            aria-label="Close">
+                    </button>
+                </div>
+
+                <div class="modal-body text-center">
+
+                    <div class="mb-3">
+                        <i class="fa fa-print"
+                           style="font-size: 45px; color: #dc3545;">
+                        </i>
+                    </div>
+
+                    <p class="mb-0">
+                        Printing is disabled for this application.
+                    </p>
+
+                </div>
+
+                <div class="modal-footer">
+                    <button type="button"
+                            class="btn btn-primary"
+                            data-bs-dismiss="modal">
+                        OK
+                    </button>
+                </div>
+
+            </div>
+
+        </div>
+    </div>
+
+
+    @*     <script src="~/assets/js/pages/jquery-3.6.0.min.js"></script> *@
+    <link href="~/assets/libs/sweetalert2/sweetalert2.min.css" rel="stylesheet" type="text/css" />
+    <script src="~/assets/libs/sweetalert2/sweetalert2.min.js"></script>
+    <script src="~/lib/jquery-validation/dist/jquery.validate.min.js" asp-append-version="true"></script>
+    <script src="~/lib/jquery-validation-unobtrusive/jquery.validate.unobtrusive.min.js" asp-append-version="true"></script>
+
+
+    <script src="~/assets/libs/bootstrap/js/bootstrap.bundle.min.js"></script>
+    <script src="~/assets/libs/simplebar/simplebar.min.js"></script>
+    <script src="~/assets/libs/node-waves/waves.min.js"></script>
+    <script src="~/assets/libs/feather-icons/feather.min.js"></script>
+    <script src="~/assets/js/pages/plugins/lord-icon-2.1.0.js"></script>
+    @*  <script src="~/assets/js/plugins.js"></script> *@
+
+    <script src="~/assets/libs/choices.js/public/assets/scripts/toastify-js.js"></script>
+    <script src="~/assets/libs/choices.js/public/assets/scripts/choices.min.js"></script>
+    <script src="~/assets/libs/flatpickr/flatpickr.min.js"></script>
+    <!-- App js -->
+    <script src="~/assets/js/app.js"></script>
+
+
+    <script>
+
+        function checkFileSize(input, documentid, docerror) {
+
+            debugger;
+
+            var validExtensions = ["jpg", "jpeg", "pdf", "doc", "xls", "xlsx", "docx"];
+            var fileInput = document.getElementById(documentid);
+            var fileName = input.value;
+            var fileExtension = fileName.split('.').pop().toLowerCase();
+            if (fileName != "") {
+                if (validExtensions.indexOf(fileExtension) === -1) {
+                    document.getElementById(docerror).innerText = "Please select a valid file format.Accepted formats include JPG, JPEG, PDF, DOC, XLS, XLSX, and DOCX.";
+
+                    fileInput.value = ""; // Clear file input
+                    return false;
+                } else {
+                    document.getElementById(docerror).innerText = "";
+                    var file = input.files[0];
+                    var fileSize = file.size;
+                    var fileSizeLimit = 2 * 1024 * 1024;
+                    if (fileSize > fileSizeLimit) {
+                        document.getElementById(docerror).innerText = "Please ensure file size is under 2MB.";
+                        fileInput.value = ""; // Clear file input
+                        return false;
+                    }
+                }
+                return true;
+
+            }
+        }
+
+    </script>
+
+
+    <script>
+
+        function clearDocument(previewDocID, documentid) {
+            $('#' + previewDocID).empty();
+            var fileInput = document.getElementById(documentid);
+            fileInput.value = ""; // Clear file input
+        }
+
+        function previewFile(val, documents, docerror1s, labelname, previewDocID) {
+
+            debugger;
+
+            var showdocument = document.getElementById(documents);
+
+            $('#' + previewDocID).empty();
+            showdocument = $('#' + previewDocID);
+
+            var isdocumentok = checkFileSize(val, documents, docerror1s);
+
+            if (isdocumentok) {
+
+                var fileInput = document.getElementById(documents);
+
+                const fileName = fileInput.files[0].name;
+                const maxLength = 150; // Example maximum length
+
+                if (fileName.length > maxLength) {
+
+                    Swal.fire({
+                        icon: 'error',
+                        title: 'Oops...',
+                        text: 'File name cannot be longer than ' + maxLength + ' characters , Please rename'
+
+                    })
+                    fileInput.value = ""; // Clear file input
+                    return false;
+                }
+
+                if (fileInput.files.length === 0) {
+                    alert('No file selected.');
+                    return;
+                }
+
+                var formData = new FormData();
+                formData.append('file', fileInput.files[0]);
+
+                $.ajax({
+                    type: "POST",
+                    url: "@Url.Action("viewDocument", "Common")",
+                    data: formData,
+                    processData: false, // Prevent jQuery from automatically transforming the data into a query string
+                    contentType: false, // Prevent jQuery from overriding the Content-Type header
+                    success: function (result) {
+
+                        debugger;
+                        showdocument.append(`
+                                                                                                                                                                                                                        <div class="col-lg-12 col-md-6 col-sm-12">
+                                                                                                                                                                                                                            <label style="margin-left: 25px;">${labelname}</label>
+                                                                                                                                                                                                                            <div class="card-body" data-simplebar>
+                                                                                                                                                                                                                                <div class="row d-flex align-items-center border border-primary p-2 rounded">
+                                                                                                                                                                                                                                    <div class="col-2 flex-shrink-0 avatar-sm">
+                                                                                                                                                                                                                                        <div class="avatar-title bg-light rounded">
+                                                                                                                                                                                                                                            ${result.fileType === "pdf" ?
+                                '<i class="ri-file-pdf-fill fs-20 text-danger"></i>' :
+                                result.fileType === "doc" || result.fileType === "docx" ?
+                                    '<i class="ri-file-word-fill fs-20 text-primary"></i>' :
+                                    result.fileType === "xls" || result.fileType === "xlsx" ?
+                                        '<i class="ri-file-excel-fill fs-20 text-success"></i>' :
+                                        '<i class="ri-image-2-fill fs-20 text-info"></i>'}
+                                                                                                                                                                                                                                        </div>
+                                                                                                                                                                                                                                    </div>
+                                                                                                                                                                                                                                    <div class="col-5 flex-grow-1 ms-3">
+                                                                                                                                                                                                                                        <h6 class="mb-1" style="font-size: 10px">
+                                                                                                                                                                                                                                                    <a href="/UploadFiles/CommontmpDocument/${result.systemFileName}" target="_blank">${result.userFileName}</a>
+                                                                                                                                                                                                                                        </h6>
+                                                                                                                                                                                                                                    </div>
+                                                                                                                                                                                                                                            <div class="col-5 d-flex justify-content-end hstack gap-3 fs-16">
+                                                                                                                                                                                                                                                <a href="/UploadFiles/CommontmpDocument/${result.systemFileName}" title="view" class="text-muted" target="_blank">
+                                                                                                                                                                                                                                            <i class="ri-eye-fill align-bottom text-muted"></i>
+                                                                                                                                                                                                                                        </a>
+                                                                                                                                                                                                                                                                                        <a class="text-danger d-inline-block remove-item-btn" onclick="clearDocument('${previewDocID}' ,'${documents}');">
+                                                                                                                                                                                                                                                                <i class="ri-delete-bin-5-fill fs-16"></i>
+                                                                                                                                                                                                                                                            </a>
+                                                                                                                                                                                                                                    </div>
+
+                                                                                                                                                                                                                                </div>
+                                                                                                                                                                                                                            </div>
+                                                                                                                                                                                                                        </div>
+                                                                                                                                                                                                                                    `);
+                    },
+                    error: function (xhr, status, error) {
+                        alert('Error - ' + error);
+                    }
+                });
+            }
+        }
+
+        //  function refreshNotificationBadge() {
+        //         var $badge = $("#notificationBadge");
+        //         if (response.count > 0) {
+        //             $badge.text(response.count > 99 ? "99+" : response.count).show();
+        //         } else {
+        //             $badge.hide();
+        //         }
+        //     });
+        // }
+
+        $(document).ready(function () {
+
+           // refreshNotificationBadge();
+           
+
+            $('.NumbersOnly').keyup(function () {
+                // Remove any characters that are not digits or a decimal point
+                this.value = this.value.replace(/[^0-9.]/g, '');
+
+                // Remove leading decimal point
+                if (this.value.startsWith('.')) {
+                    this.value = this.value.substring(1);
+                }
+
+                // Ensure that there's only one decimal point in the value
+                if ((this.value.match(/\./g) || []).length > 1) {
+                    this.value = this.value.replace(/\.+$/, "");
+                }
+            });
+
+
+            $(".alphaspace").on("keyup", function () {
+
+                var regex = /[^a-zA-Z ]/g;
+
+                if (this.value.match(regex)) {
+
+                    this.value = this.value.replace(regex, '');
+
+                }
+
+            });
+
+
+
+            // Alphanumeric with space allowed
+            $(".alphanumeric").on("keyup", function () {
+                var regex = /[^a-zA-Z0-9 ]/g;
+
+                if (this.value.match(regex)) {
+                    this.value = this.value.replace(regex, '');
+                }
+            });
+
+
+
+        });
+
+        
+
+    </script>
+
+
+    <script>
+        //           document.addEventListener("DOMContentLoaded", function () {
+        //     // find all dropdowns with .selectchoice
+        //     document.querySelectorAll('.selectchoice').forEach(function (el) {
+        //         const choice = new Choices(el, {
+        //             searchEnabled: true,                  // ✅ enable search box
+        //             searchPlaceholderValue: 'Search...',  // placeholder inside search
+        //             itemSelectText: '',                   // hide “Press to select” text
+        //             removeItemButton: true,               // add X button for removal
+        //             shouldSort: false                     // keep original order
+        //         });
+
+        //         // 🔔 common event listeners for all dropdowns
+        //     });
+        // });
+
+        document.addEventListener("DOMContentLoaded", function () {
+            document.querySelectorAll('.selectchoice').forEach(function (el) {
+                const choice = new Choices(el, {
+                    searchEnabled: true,
+                    searchPlaceholderValue: 'Search...',
+                    itemSelectText: '',
+                    removeItemButton: true,
+                    shouldSort: false
+                });
+
+                // Check space dynamically
+                el.addEventListener('showDropdown', function () {
+                    const rect = el.getBoundingClientRect();
+                    const dropdown = el.closest('.choices').querySelector('.choices__list--dropdown');
+
+                    if (window.innerHeight - rect.bottom < 200) {
+                        // Not enough space below → open upward
+                        dropdown.style.bottom = '100%';
+                        dropdown.style.top = 'auto';
+                    } else {
+                        // Enough space → open downward
+                        dropdown.style.top = '100%';
+                        dropdown.style.bottom = 'auto';
+                    }
+                });
+            });
+        });
+
+    </script>
+
+    <style>
+        /* Teal brand accents to match updated login page */
+        .navbar-nav .nav-link.active,
+        .navbar-nav .nav-link:hover,
+        .navbar-nav .nav-link:focus {
+            color: #6FE0C4 !important;
+        }
+
+        .navbar-nav .nav-link.active i,
+        .navbar-nav .nav-link:hover i {
+            color: #6FE0C4 !important;
+        }
+
+        .btn-topbar:hover,
+        .btn-topbar:focus {
+            color: #0D7C66 !important;
+        }
+
+        a.logo-dark, a.logo-light {
+            color: #0D7C66;
+        }
+
+        .dropdown-item:hover,
+        .dropdown-item:focus {
+            background-color: #EEF4F2;
+            color: #0D7C66;
+        }
+
+        /*   .table-light {
+                                                                                            color: black;
+                                                                                            background-color: #03396e;
+                                                                                        }
+
+
+                                                                                        .menubg {
+                                                                                            color: white;
+                                                                                        }
+
+                                                                                        .footer2 {
+                                                                                            position: fixed;
+                                                                                            left: 0;
+                                                                                            bottom: 0;
+                                                                                            width: 100%;
+                                                                                            height: 50px;
+                                                                                            background-image: radial-gradient(circle at 30% 107%, #af40ff 0%, #505151 5%, #5b42f3 60%, #00ddeb 90%);
+                                                                                            color: #ededed;
+                                                                                            text-decoration: none;
+                                                                                            font-size: 100%;
+                                                                                        } */
+
+    </style>
+    @await RenderSectionAsync("Scripts", required: false)
+</body>
+
+</html>

@@ -1,0 +1,78 @@
+@using DMS.Model.Master
+@model SystemConfigItem
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["PageTitle"] = "Change Setting";
+    var type = (Model.value_type ?? "string").ToLowerInvariant();
+}
+<partial name="_AdminPageTitle" />
+
+<div class="row">
+    <div class="col-xl-12">
+        <div class="card">
+            <div class="card-header"><h4 class="card-title mb-0"><code>@Model.config_key</code></h4></div>
+            <div class="alert alert-warning py-2 m-3 mb-0" role="alert" style="font-size: 14px;">
+                @if (Model.is_gxp_relevant)
+                {
+                    <span>⚠ This setting is GxP-relevant: a reason for change is required and recorded in the audit trail with the old and new value.</span>
+                }
+                else
+                {
+                    <span>The change is recorded in the audit trail.</span>
+                }
+            </div>
+            <div class="card-body">
+                <p class="text-muted">@Model.description</p>
+                <form asp-action="Edit" method="post" class="row g-3" onsubmit="return checkReason()">
+                    <input type="hidden" name="key" value="@Model.config_key" />
+                    <div class="form-group col-xl-8 mb-3">
+                        <label class="form-label" for="value">Value <small class="text-muted">(@type)</small></label>
+                        @if (Model.IsSecret)
+                        {
+                            <input id="value" name="value" type="password" class="form-control" autocomplete="new-password" placeholder="Enter the new value" />
+                            <div class="form-check mt-2"><input class="form-check-input" type="checkbox" id="keepSecret" name="keepSecret" value="true" /><label class="form-check-label" for="keepSecret">Keep the current value</label></div>
+                        }
+                        else if (type == "bool")
+                        {
+                            <select id="value" name="value" class="form-select">
+                                <option value="true" selected="@(Model.config_value?.ToLowerInvariant() == "true")">true</option>
+                                <option value="false" selected="@(Model.config_value?.ToLowerInvariant() != "true")">false</option>
+                            </select>
+                        }
+                        else if (type == "int" || type == "double")
+                        {
+                            <input id="value" name="value" type="number" step="@(type == "int" ? "1" : "any")" class="form-control" value="@Model.config_value" />
+                        }
+                        else if (type == "json" || (Model.config_value?.Length ?? 0) > 80)
+                        {
+                            <textarea id="value" name="value" class="form-control font-monospace" rows="6">@Model.config_value</textarea>
+                        }
+                        else
+                        {
+                            <input id="value" name="value" class="form-control" value="@Model.config_value" />
+                        }
+                    </div>
+                    <div class="form-group col-xl-12 mb-3">
+                        <label class="form-label" for="reason">Reason for change</label> @if (Model.is_gxp_relevant) { <span style="color: red;">*</span> }
+                        <textarea id="reason" name="reason" class="form-control" rows="2" maxlength="1000"></textarea>
+                        <span id="reason_error" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <div class="text-end">
+                            <a asp-action="Index" asp-route-category="@Model.category" class="btn btn-primary ms-2">Back To List</a>
+                            <button type="submit" class="btn btn-success">Save</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    var reasonRequired = @(Model.is_gxp_relevant ? "true" : "false");
+    function checkReason() {
+        var ok = !reasonRequired || document.getElementById('reason').value.trim().length >= 3;
+        document.getElementById('reason_error').textContent = ok ? '' : 'Please enter the reason for this change.';
+        return ok;
+    }
+</script>

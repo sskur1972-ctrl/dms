@@ -1,0 +1,269 @@
+@using DMS.Model.Account
+@model users
+
+<style>
+
+    .custom-select-wrapper {
+        position: relative;
+        display: inline-block;
+        width: 100%;
+    }
+
+        .custom-select-wrapper select {
+            appearance: none;
+            -webkit-appearance: none;
+            -moz-appearance: none;
+            padding-right: 2rem;
+        }
+
+    .dropdown-icon {
+        position: absolute;
+        right: 10px;
+        top: 50%;
+        transform: translateY(-50%);
+        pointer-events: none;
+        color: #666;
+    }
+</style>
+<div class="row m-3">
+    <div class="col-xl-12">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title">Create User</h4>
+            </div>
+            <div class="alert alert-warning py-2 mb-3" role="alert" style="font-size: 14px;">
+                ⚠ Fields marked <span style="color: red;">*</span> are required.
+            </div>
+                    <div class="card-body">
+                            <form id="frmSubmit" onsubmit="return submitForm()" asp-controller="User" asp-action="Create" class="row g-3 needs-validation" novalidate>
+                                <div class="card">
+                                    <div class="card-body">
+                                        <div class="form-row row">
+                                            @* <div class="form-group col-xl-6  mb-4">
+                                                    <label asp-for="username" class="form-label" autocomplete="off"></label>
+                                                    <input asp-for="username" required class="form-control" placeholder="Enter User Name" />
+                                                    <span id="username_error" class="text-danger"></span>
+
+                                            </div> *@
+                                            <div class="form-group col-xl-6 mb-4">
+                                    <label asp-for="emailid" class="form-label"></label> <span style="color: red;">*</span>
+                                                <input type="email" asp-for="emailid" class="form-control" required placeholder="Enter Email ID" id="emailid" />
+                                                <span id="email_error" class="text-danger" style="display: none;"></span>
+                                            </div>
+
+                                             <div class="form-group col-xl-6  mb-4">
+                                    <label asp-for="password" class="form-label">Password</label> <span style="color: red;">*</span>
+                                                <input type="password" asp-for="password" class="form-control" maxlength="16" required placeholder="Enter Password">
+                                                <span id="password_error" class="text-danger"></span>
+                                                <span id="password_error1"></span>
+
+                                            </div>
+                    
+                                            <div class="form-group col-xl-6  mb-4">
+                                    <label asp-for="mobilenumber" class="form-label" autocomplete="off"></label> <span style="color: red;">*</span>
+                                                <input asp-for="mobilenumber" required class="form-control numeric" maxlength="10" placeholder="Enter Mobile Number" />
+                                                <span id="mobilenumber_error" class="text-danger"></span>
+
+                                            </div>
+
+                                            <div class="form-group col-xl-6  mb-4">
+                                    <label asp-for="DisplayName" class="form-label"></label> <span style="color: red;">*</span>
+                                                <input asp-for="DisplayName" class="form-control" maxlength="20" required placeholder="Enter Display Name" />
+                                                <span id="displayname_error" class="text-danger"></span>
+
+                                            </div>
+
+                                            <div class="form-group col-xl-6  mb-4">
+                                    <label asp-for="address" class="form-label"></label> <span style="color: red;">*</span>
+                                                <input asp-for="address" class="form-control" maxlength="250" required placeholder="Enter Address" />
+                                                <span id="address_error" class="text-danger"></span>
+
+                                            </div>
+                                          
+                                            <div class="form-group col-xl-6  mb-4">
+
+                                    <label asp-for="role_id" class="form-label"></label> <span style="color: red;">*</span>
+                                                <div class="custom-select-wrapper position-relative">
+                                                @Html.DropDownListFor(M => M.role_id, new SelectList(ViewBag.RoleList, "RoleId", "role_name"), "-- Select Role --", new { @class = "form-select", @required = "true", @validate = "true" })
+                                                    <i class="fa fa-chevron-down dropdown-icon"></i>
+                                                </div>
+                                                <span id="role_error" class="text-danger"></span>
+
+                                            </div>
+
+                                <div class="form-group col-xl-6  mb-4">
+                                    <label asp-for="fk_department_id" class="form-label"></label>
+                                    <div class="custom-select-wrapper position-relative">
+                                    @Html.DropDownListFor(M => M.fk_department_id, new SelectList((System.Collections.IEnumerable)(ViewBag.DepartmentList ?? new List<DMS.Model.Account.DepartmentDropDownViewModel>()), "id", "DisplayText"), "-- Select Department --", new { @class = "form-select" })
+                                        <i class="fa fa-chevron-down dropdown-icon"></i>
+                                    </div>
+                                </div>
+                                        </div>
+
+                                        <div class="form-group">
+                                            <div class="text-end">
+                                                <a asp-action="Index" class="btn btn-primary ms-2">Back To List</a>
+                                                <button type="submit" class="btn btn-success" id="save_btn">
+                                                     Save
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                            </form>
+                   </div>
+        </div>
+    </div>
+</div>
+@{
+    string passwordRegex = "^(?=.*[a-z])(?=.*[A-Z])(?=.*\\d)(?=.*[@$!%*?&])[A-Za-z\\d@$!%*?&]+$";
+}
+
+<script>
+
+
+     document.getElementById("password").addEventListener("input", function () {
+
+         debugger
+        const password = this.value;
+        const hint = document.getElementById("password_error1");
+
+        // Use Razor to correctly pass the regex to JavaScript
+        const regex = new RegExp(@Html.Raw(Json.Serialize(passwordRegex)));
+
+        if (!regex.test(password)) {
+            hint.style.color = "red";
+            hint.textContent = "Weak password ! Password must contains uppercase, lowercase, number, and special character.";
+        } else {
+            hint.style.color = "green";
+            hint.textContent = "Strong password !";
+        }
+    });
+
+
+
+    document.addEventListener("DOMContentLoaded", function () {
+
+          $('.numeric').keyup(function () {
+                var regex = /[^0-9]/g;
+                if (this.value.match(regex)) {
+                    this.value = this.value.replace(regex, '');
+                }
+           });
+
+
+    
+    $(document).ready(function () {
+        $('#emailid').on('blur', function () {
+            var email = $(this).val().trim();
+            var emailField = $(this);
+            var errorSpan = $('#email_error');
+
+            // Clear any existing errors
+            errorSpan.hide().text('');
+
+            if (email === "") {
+                return;
+            }
+
+            // Corrected email pattern
+            var emailPattern = /^[a-zA-Z0-9._-]+@@[a-zA-Z0-9.-]+\.[a-zA-Z]{2,6}$/;
+
+            if (emailPattern.test(email)) {
+                $.ajax({
+                    url: '@Url.Action("IsEmailUnique", "User")',
+                    type: 'GET',
+                    data: { email: email },
+                    success: function (response) {
+                        if (response === true) {
+                            Swal.fire({
+                                title: "Oops..",
+                                html: "This email is already registered.",
+                                icon: "warning",
+                                confirmButtonText: "Ok"
+                            });
+
+                            // Clear the email input field
+                            emailField.val("");
+                             errorSpan.show().text("Please provide a valid email address.");
+                        }
+                    },
+                    error: function () {
+                        errorSpan.show().text("Error checking email. Please try again.");
+                    }
+                });
+            } else {
+                emailField.val("");
+                errorSpan.show().text("Please provide a valid email address.");
+            }
+        });
+    });
+
+
+
+
+         document.querySelector("input[name='mobilenumber']").addEventListener("blur", function () {
+            let mobileInput = this;
+            let errorSpan = document.getElementById("mobilenumber_error");
+            let mobilePattern = /^[6-9]\d{9}$/;
+
+            if (!mobilePattern.test(mobileInput.value)) {
+                mobileInput.value = "";
+                errorSpan.textContent = "Please enter a valid 10-digit Indian mobile number starting with 6, 7, 8, or 9.";
+            } else {
+                errorSpan.textContent = "";
+            }
+         });
+    });
+
+
+      function submitForm() {
+
+            debugger
+
+            var fields = [
+               // { id: "#username", errorId: "#username_error", message: "Please Provide User Name" },
+                { id: "#password", errorId: "#password_error", message: "Please Provide Password" },
+                { id: "#emailid", errorId: "#email_error", message: "Please Provide Email" },
+                { id: "#DisplayName", errorId: "#displayname_error", message: "Please Provide Display Name" },
+                { id: "#address", errorId: "#address_error", message: "Please Provide Office/Location" },
+                { id: "#role_id", errorId: "#role_error", message: "Please Select Role" },
+                { id: "#mobilenumber", errorId: "#mobilenumber_error", message: "Please Provide Mobile Number" }
+
+            ];
+
+            var allFilled = true;
+
+            fields.forEach(function (field) {
+                var value = $(field.id).val();
+                debugger
+                if ((value == null || value == 0 )) {
+                    allFilled = false;
+                    $(field.errorId).text(field.message);
+
+                } else {
+                    $(field.errorId).text("");
+                }
+
+                $(field.id).on("input change", function () {
+                    if ($(this).val() != null && $(this).val() != 0) {
+                        $(field.errorId).text("");
+                    }
+                });
+            });
+
+            debugger
+               const hint = document.getElementById("password_error1").innerText;
+
+                if (hint != "Strong password !") {
+                    return false;
+                }
+
+            if (allFilled) {
+
+                document.getElementById("frmSubmit").submit();
+            }
+            return false;
+         }
+
+</script>

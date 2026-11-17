@@ -1,0 +1,48 @@
+@using DMS.Model.Documents
+@model List<PrintLogRow>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["PageTitle"] = "Print Log";
+    ViewData["Section"] = "Controlled Print";
+    var from = ViewBag.from as DateTime?; var to = ViewBag.to as DateTime?;
+}
+<partial name="_AdminPageTitle" />
+
+<div class="card">
+    <div class="card-header">
+        <form method="get" class="row g-2 align-items-end">
+            <div class="col-auto"><label class="form-label small mb-0">From</label><input class="form-control form-control-sm" type="date" name="from" value="@from?.ToString("yyyy-MM-dd")" /></div>
+            <div class="col-auto"><label class="form-label small mb-0">To</label><input class="form-control form-control-sm" type="date" name="to" value="@to?.ToString("yyyy-MM-dd")" /></div>
+            @if (ViewBag.documentId != null) { <input type="hidden" name="documentId" value="@ViewBag.documentId" /> }
+            <div class="col-auto"><button class="btn btn-sm btn-primary" type="submit">Filter</button> <a class="btn btn-sm btn-light" asp-action="Log">Clear</a></div>
+        </form>
+    </div>
+    <div class="card-body">
+        <p class="small text-muted">Every print, reprint, return, destruction and loss of a copy, and every uncontrolled copy produced from the Read page. The log is append-only.</p>
+        <div class="table-responsive">
+            <table class="table table-sm table-bordered small mb-0">
+                <thead class="table-light"><tr><th>When (UTC)</th><th>Event</th><th>Document</th><th>Rev</th><th>Request</th><th>Copy</th><th>By</th><th>Printer / ref.</th><th>Watermark</th><th>SHA-256</th><th>IP</th><th>Remarks</th></tr></thead>
+                <tbody>
+                    @if (Model.Count == 0) { <tr><td colspan="12" class="text-center text-muted">No entries.</td></tr> }
+                    @foreach (var l in Model)
+                    {
+                        <tr>
+                            <td class="text-nowrap">@l.performed_at.ToString("dd-MMM-yyyy HH:mm:ss")</td>
+                            <td>@l.event_type</td>
+                            <td><a asp-controller="Documents" asp-action="Details" asp-route-id="@l.document_id">@l.document_number</a></td>
+                            <td>@l.version_no</td>
+                            <td>@l.request_number</td>
+                            <td class="font-monospace">@l.copy_control_number</td>
+                            <td>@l.performed_by_name</td>
+                            <td>@l.printer_or_target</td>
+                            <td>@l.watermark_applied</td>
+                            <td class="font-monospace" title="@l.file_sha256">@(l.file_sha256?[..12])</td>
+                            <td>@l.ip_address</td>
+                            <td>@l.remarks</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,17 @@
+@using DMS.Web.Services.DocumentEditor
+@model EditorSession
+@{ Layout="~/Views/Shared/_Layout.cshtml";ViewData["EditorWorkspace"]=true;
+ var origin=new Uri(Model.LaunchUrl).GetLeftPart(UriPartial.Authority);
+ Context.Response.Headers["Content-Security-Policy"]=$"frame-src 'self' {origin}; form-action 'self' {origin}; frame-ancestors 'self'; base-uri 'self'"; }
+<link rel="stylesheet" href="~/css/editor-workspace.css" asp-append-version="true" />
+<div class="dms-editor-toolbar"><strong>@Model.Title</strong><span>Read-only</span><span id="attachment-status" role="status">Loading…</span></div>
+<section class="dms-editor-pane" style="height:calc(100dvh - 114px)" aria-label="Read-only attachment">
+ <form id="attachment-launch" target="attachment-frame" action="@Model.LaunchUrl" method="post" asp-antiforgery="false">
+  @foreach(var field in Model.PostFields){<input type="hidden" name="@field.Key" value="@field.Value" />}
+ </form>
+ <iframe id="attachment-frame" name="attachment-frame" title="Read-only attachment" referrerpolicy="no-referrer"></iframe>
+ @if(ViewData["Watermark"] is string label){<div class="dms-single-watermark" aria-hidden="true"><span>@label</span></div>}
+</section>
+<script id="attachment-settings" type="application/json">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model))</script>
+<script src="~/js/editor/collabora-adapter.js" asp-append-version="true"></script>
+<script src="~/js/editor/attachment-viewer.js" asp-append-version="true"></script>

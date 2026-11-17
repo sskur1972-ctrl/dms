@@ -1,0 +1,89 @@
+﻿@{
+    Layout = null;
+}
+
+<!doctype html>
+<html lang="en">
+
+<head>
+
+    <meta charset="utf-8" />
+    <title>403 Error</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+
+    <!-- App favicon -->
+
+    <link rel="shortcut icon" href="~/assets/images/favicon.ico">
+
+    <!-- Layout config Js -->
+
+    <script src="~/assets/js/layout.js"></script>
+
+    <!-- Bootstrap Css -->
+
+    <link href="~/assets/css/bootstrap.min.css" rel="stylesheet" type="text/css" />
+
+    <!-- Icons Css -->
+
+    <link href="~/assets/css/icons.min.css" rel="stylesheet" type="text/css" />
+
+    <!-- App Css-->
+
+    <link href="~/assets/css/app.min.css" rel="stylesheet" type="text/css" />
+
+    <!-- custom Css-->
+
+    <link href="~/assets/css/custom.min.css" rel="stylesheet" type="text/css" />
+
+</head>
+
+<body>
+
+    <!-- auth-page wrapper -->
+    <div class="auth-page-wrapper py-5 d-flex justify-content-center align-items-center min-vh-100">
+
+        <!-- auth-page content -->
+        <div class="auth-page-content overflow-hidden p-0">
+            <div class="container-fluid">
+                <div class="row justify-content-center">
+                    <div class="col-xl-4 text-center">
+                        <div class="error-500 position-relative">
+                            <img src="/assets/images/error500.png" alt="" class="img-fluid error-500-img error-img" />
+                            <h1 class="title text-muted">403</h1>
+                        </div>
+                        <div>
+                            <h4>Oops, You don't have permission to access this page.!</h4>
+                            <p class="text-muted w-75 mx-auto">Status code 403 responses are the result of the web server being configured to deny access, for some reason, to the requested resource by the client.</p>
+                            <a asp-controller="Account" asp-action="Login" class="btn btn-success"><i class="mdi mdi-home me-1"></i>Back to home</a>
+                        </div>
+                    </div><!-- end col-->
+                </div>
+                <!-- end row -->
+            </div>
+            <!-- end container -->
+        </div>
+        <!-- end auth-page content -->
+    </div>
+    <!-- end auth-page-wrapper -->
+
+</body>
+
+</html>
+
+
+<!-- end auth-page-wrapper --> <!-- end auth-page-wrapper -->
+<!-- JAVASCRIPT -->
+<script src="~/assets/libs/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script src="~/assets/libs/simplebar/simplebar.min.js"></script>
+<script src="~/assets/libs/node-waves/waves.min.js"></script>
+<script src="~/assets/libs/feather-icons/feather.min.js"></script>
+<script src="~/assets/js/pages/plugins/lord-icon-2.1.0.js"></script>
+<script src="~/assets/js/plugins.js"></script>
+<script src="~/assets/js/pages/form-validation.init.js"></script>
+<!-- particles js -->
+<script src="~/assets/libs/particles.js/particles.js"></script>
+<!-- particles app js -->
+<script src="~/assets/js/pages/particles.app.js"></script>
+<!-- password-addon init -->
+<script src="~/assets/js/pages/password-addon.init.js"></script>

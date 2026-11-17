@@ -1,0 +1,10 @@
+@model string
+<div class="dms-cc-picker" data-url="@Url.Action("ChangeControls", "Documents")">
+ <select id="ChangeControlNumber" name="ChangeControlNumber" class="form-select dms-cc-number" data-current="@Model">
+  <option value="">Select Change Control No.</option>
+  @if(!string.IsNullOrWhiteSpace(Model)){<option value="@Model" selected>@Model</option>}
+ </select>
+ <span class="small text-danger dms-cc-error" role="status"></span>
+</div>
+<link rel="stylesheet" href="~/css/change-control-picker.css" asp-append-version="true" />
+<script src="~/js/change-control-picker.js" asp-append-version="true" defer></script>

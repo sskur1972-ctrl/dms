@@ -1,0 +1,253 @@
+@using DMS.Model.Documents
+@model DashboardViewModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Dashboard";
+    string _perm = User.Claims.FirstOrDefault(c => c.Type == "serializedPermissionList")?.Value ?? string.Empty;
+    bool Has(string p) => _perm.Contains("\"" + p + "\"");
+    string displayName = User.Claims.FirstOrDefault(c => c.Type == "displayName")?.Value ?? "";
+    string roleName = User.Claims.FirstOrDefault(c => c.Type == "role_name")?.Value ?? "";
+    var c = Model.Counts;
+    bool docs = Has("View documents");
+}
+<style>
+    .dms-card { border: 0; border-radius: 14px; box-shadow: 0 1px 3px rgba(16,36,30,.08); transition: box-shadow .2s, transform .2s; height: 100%; }
+    .dms-card:hover { box-shadow: 0 6px 18px rgba(16,36,30,.12); transform: translateY(-2px); }
+    .dms-icon { width: 46px; height: 46px; border-radius: 12px; display: flex; align-items: center; justify-content: center; background: rgba(13,124,102,.12); color: #0D7C66; font-size: 22px; flex-shrink: 0; }
+    .dms-icon.warn { background: rgba(247,184,75,.18); color: #b77b00; }
+    .dms-icon.danger { background: rgba(240,101,72,.14); color: #c0392b; }
+    .dms-count { font-size: 1.6rem; font-weight: 600; line-height: 1; }
+</style>
+
+<div class="container-fluid">
+    <div class="row mb-3">
+        <div class="col-12">
+            <h4 class="mb-1">Welcome, @displayName</h4>
+            <p class="text-muted mb-0">Document Management System &middot; Role: @roleName</p>
+        </div>
+    </div>
+    @if (ViewBag.dashboardProblem is string problem)
+    {
+        <div class="alert alert-warning small">The dashboard figures are not available: @problem</div>
+    }
+
+    @if (docs)
+    {
+        <div class="row g-3 mb-3">
+            <div class="col-xl-3 col-md-6">
+                <a asp-controller="Documents" asp-action="Index" asp-route-pending="true" class="text-reset">
+                    <div class="card dms-card"><div class="card-body d-flex align-items-center gap-3">
+                        <div class="dms-icon @(c.overdue_tasks > 0 ? "danger" : "")"><i class="ri-inbox-archive-line"></i></div>
+                        <div><div class="dms-count">@c.pending_tasks</div><small class="text-muted">pending with me@(c.overdue_tasks > 0 ? $" · {c.overdue_tasks} overdue" : "")</small></div>
+                    </div></div>
+                </a>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <a asp-controller="Documents" asp-action="Index" asp-route-mine="true" class="text-reset">
+                    <div class="card dms-card"><div class="card-body d-flex align-items-center gap-3">
+                        <div class="dms-icon"><i class="ri-draft-line"></i></div>
+                        <div><div class="dms-count">@c.my_drafts</div><small class="text-muted">my drafts · @c.my_in_workflow in workflow</small></div>
+                    </div></div>
+                </a>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <div class="card dms-card"><div class="card-body d-flex align-items-center gap-3">
+                    <div class="dms-icon @(c.reviews_due > 0 ? "warn" : "")"><i class="ri-calendar-check-line"></i></div>
+                    <div><div class="dms-count">@c.reviews_due</div><small class="text-muted">periodic reviews due soon</small></div>
+                </div></div>
+            </div>
+            <div class="col-xl-3 col-md-6">
+                <a asp-controller="Documents" asp-action="Index" class="text-reset">
+                    <div class="card dms-card"><div class="card-body d-flex align-items-center gap-3">
+                        <div class="dms-icon"><i class="ri-file-shield-2-line"></i></div>
+                        <div><div class="dms-count">@c.effective_documents</div><small class="text-muted">documents in force</small></div>
+                    </div></div>
+                </a>
+            </div>
+            @if (Has("Authorize controlled print"))
+            {
+                <div class="col-xl-3 col-md-6">
+                    <a asp-controller="Print" asp-action="Index" asp-route-status="PENDING" class="text-reset">
+                        <div class="card dms-card"><div class="card-body d-flex align-items-center gap-3">
+                            <div class="dms-icon @(c.print_to_authorize > 0 ? "warn" : "")"><i class="ri-printer-line"></i></div>
+                            <div><div class="dms-count">@c.print_to_authorize</div><small class="text-muted">print requests to authorise</small></div>
+                        </div></div>
+                    </a>
+                </div>
+            }
+            @if (Has("Issue / return controlled copies"))
+            {
+                <div class="col-xl-3 col-md-6">
+                    <a asp-controller="Print" asp-action="Retrieve" class="text-reset">
+                        <div class="card dms-card"><div class="card-body d-flex align-items-center gap-3">
+                            <div class="dms-icon @(c.copies_to_retrieve > 0 ? "danger" : "")"><i class="ri-arrow-go-back-line"></i></div>
+                            <div><div class="dms-count">@c.copies_to_retrieve</div><small class="text-muted">controlled copies to retrieve</small></div>
+                        </div></div>
+                    </a>
+                </div>
+            }
+            @if (Has("Request controlled print"))
+            {
+                <div class="col-xl-3 col-md-6">
+                    <a asp-controller="Print" asp-action="Index" asp-route-mine="true" class="text-reset">
+                        <div class="card dms-card"><div class="card-body d-flex align-items-center gap-3">
+                            <div class="dms-icon"><i class="ri-file-copy-2-line"></i></div>
+                            <div><div class="dms-count">@c.my_print_open</div><small class="text-muted">my open print requests</small></div>
+                        </div></div>
+                    </a>
+                </div>
+            }
+            @if (Model.Audit != null)
+            {
+                var a = Model.Audit;
+                var stale = a.last_review_at == null || a.last_review_at < DateTime.UtcNow.AddDays(-31);
+                <div class="col-xl-3 col-md-6">
+                    <a asp-controller="AuditReview" asp-action="Reviews" class="text-reset">
+                        <div class="card dms-card"><div class="card-body d-flex align-items-center gap-3">
+                            <div class="dms-icon @(a.last_review_chain_ok == false ? "danger" : stale ? "warn" : "")"><i class="ri-shield-check-line"></i></div>
+                            <div><div class="dms-count">@a.rows_since_last_review.ToString("N0")</div>
+                                <small class="text-muted">audit entries since the last review@(a.last_review_at == null ? " (none recorded)" : " (" + a.last_review_at?.ToString("dd-MMM") + ")")</small></div>
+                        </div></div>
+                    </a>
+                </div>
+            }
+            @if (c.impact_pending > 0 || Has("Manage document links"))
+            {
+                <div class="col-xl-3 col-md-6">
+                    <a asp-controller="Documents" asp-action="Impact" class="text-reset">
+                        <div class="card dms-card"><div class="card-body d-flex align-items-center gap-3">
+                            <div class="dms-icon @(c.impact_pending > 0 ? "warn" : "")"><i class="ri-links-line"></i></div>
+                            <div><div class="dms-count">@c.impact_pending</div><small class="text-muted">linked documents to assess (mine)</small></div>
+                        </div></div>
+                    </a>
+                </div>
+            }
+        </div>
+
+        <div class="row g-3 mb-3">
+            @if (Model.PrintToAuthorize.Count > 0)
+            {
+                <div class="col-xl-6">
+                    <div class="card h-100">
+                        <div class="card-header"><h6 class="card-title mb-0">Print requests awaiting your authorisation</h6></div>
+                        <div class="card-body p-0">
+                            <table class="table table-sm mb-0 small">
+                                <tbody>
+                                    @foreach (var r in Model.PrintToAuthorize)
+                                    {
+                                        <tr><td class="ps-3"><a asp-controller="Print" asp-action="Details" asp-route-id="@r.id">@r.request_number</a></td><td>@r.document_number rev @r.version_no</td>
+                                            <td>@r.copies_requested × @r.copy_type.ToLowerInvariant()</td><td>@r.requested_by_name</td></tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+            @if (Model.CopiesToRetrieve.Count > 0)
+            {
+                <div class="col-xl-6">
+                    <div class="card h-100">
+                        <div class="card-header"><h6 class="card-title mb-0">Controlled copies to retrieve</h6></div>
+                        <div class="card-body p-0">
+                            <table class="table table-sm mb-0 small">
+                                <tbody>
+                                    @foreach (var r in Model.CopiesToRetrieve)
+                                    {
+                                        <tr><td class="ps-3 font-monospace">@r.copy_control_number</td><td>@r.issued_to_name</td><td>@r.reason</td>
+                                            <td><a asp-controller="Print" asp-action="Details" asp-route-id="@r.print_request_id">@r.request_number</a></td></tr>
+                                    }
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            }
+            <div class="col-xl-6">
+                <div class="card h-100">
+                    <div class="card-header"><h6 class="card-title mb-0">Periodic reviews due</h6></div>
+                    <div class="card-body p-0">
+                        @if (Model.ReviewsDue.Count == 0) { <p class="text-muted small p-3 mb-0">None in the notice period.</p> }
+                        else
+                        {
+                            <table class="table table-sm mb-0 small">
+                                <tbody>
+                                    @foreach (var r in Model.ReviewsDue)
+                                    {
+                                        <tr><td class="ps-3"><a asp-controller="Documents" asp-action="Details" asp-route-id="@r.document_id">@r.document_number</a></td><td>@r.title</td>
+                                            <td class="text-nowrap">@r.periodic_review_due_on.ToString("dd-MMM-yyyy")</td>
+                                            <td><span class="badge @(r.days_left < 0 ? "bg-danger" : r.days_left <= 7 ? "bg-warning text-dark" : "bg-light text-dark border")">@(r.days_left < 0 ? $"{-r.days_left} d overdue" : $"{r.days_left} d")</span></td></tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                    </div>
+                </div>
+            </div>
+            <div class="col-xl-6">
+                <div class="card h-100">
+                    <div class="card-header"><h6 class="card-title mb-0">Made effective in the last 30 days</h6></div>
+                    <div class="card-body p-0">
+                        @if (Model.RecentEffective.Count == 0) { <p class="text-muted small p-3 mb-0">None.</p> }
+                        else
+                        {
+                            <table class="table table-sm mb-0 small">
+                                <tbody>
+                                    @foreach (var r in Model.RecentEffective)
+                                    {
+                                        <tr><td class="ps-3"><a asp-controller="Documents" asp-action="Details" asp-route-id="@r.document_id">@r.document_number</a> rev @r.version_label</td>
+                                            <td>@r.title</td><td class="text-nowrap">@r.effective_from?.ToString("dd-MMM-yyyy")</td></tr>
+                                    }
+                                </tbody>
+                            </table>
+                        }
+                    </div>
+                </div>
+            </div>
+        </div>
+    }
+
+    <div class="row g-3">
+        @if (Has("View User"))
+        {
+            <div class="col-xl-3 col-md-6">
+                <a asp-controller="User" asp-action="Index" class="text-reset">
+                    <div class="card dms-card"><div class="card-body d-flex align-items-center gap-3">
+                        <div class="dms-icon"><i class="ri-user-3-line"></i></div>
+                        <div><h6 class="mb-0">Users</h6><small class="text-muted">Create and manage users</small></div>
+                    </div></div>
+                </a>
+            </div>
+        }
+        @if (Has("View Role"))
+        {
+            <div class="col-xl-3 col-md-6">
+                <a asp-controller="Roles" asp-action="Index" class="text-reset">
+                    <div class="card dms-card"><div class="card-body d-flex align-items-center gap-3">
+                        <div class="dms-icon"><i class="ri-shield-user-line"></i></div>
+                        <div><h6 class="mb-0">Roles</h6><small class="text-muted">Roles and their permissions</small></div>
+                    </div></div>
+                </a>
+            </div>
+        }
+        @if (Has("View Permission"))
+        {
+            <div class="col-xl-3 col-md-6">
+                <a asp-controller="Permissions" asp-action="Index" class="text-reset">
+                    <div class="card dms-card"><div class="card-body d-flex align-items-center gap-3">
+                        <div class="dms-icon"><i class="ri-key-2-line"></i></div>
+                        <div><h6 class="mb-0">Permissions</h6><small class="text-muted">Module-wise permissions</small></div>
+                    </div></div>
+                </a>
+            </div>
+        }
+        <div class="col-xl-3 col-md-6">
+            <a asp-controller="AuditTrail" asp-action="Index" asp-route-Id="@User.Claims.FirstOrDefault(x => x.Type == "UserID")?.Value" class="text-reset">
+                <div class="card dms-card"><div class="card-body d-flex align-items-center gap-3">
+                    <div class="dms-icon"><i class="ri-history-line"></i></div>
+                    <div><h6 class="mb-0">Audit Logs</h6><small class="text-muted">User activity trail</small></div>
+                </div></div>
+            </a>
+        </div>
+    </div>
+</div>

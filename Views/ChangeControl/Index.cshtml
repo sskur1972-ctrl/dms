@@ -1,0 +1,88 @@
+@using DMS.Model.Master
+@model List<ChangeControl>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["PageTitle"] = "Change Control Register";
+    string? q = ViewBag.q as string;
+    string? status = ViewBag.status as string;
+}
+<partial name="_DataTableCSS" />
+<partial name="_AdminPageTitle" />
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header border-0">
+                <form method="get" asp-action="Index" class="row g-2 align-items-end">
+                    <div class="col-sm-6"><input name="q" value="@q" class="form-control" placeholder="Search number or title" /></div>
+                    <div class="col-sm-3">
+                        <select name="status" class="form-select">
+                            <option value="">Any status</option>
+                            <option value="UNVERIFIED" selected="@(status == "UNVERIFIED")">Unverified</option>
+                            <option value="VERIFIED" selected="@(status == "VERIFIED")">Verified</option>
+                            <option value="PENDING_APPROVAL" selected="@(status == "PENDING_APPROVAL")">Pending approval</option>
+                        </select>
+                    </div>
+                    <div class="col-sm-3"><button class="btn btn-primary w-100" type="submit"><i class="ri-search-line me-1"></i> Search</button></div>
+                </form>
+            </div>
+            <div class="card-body">
+                <table id="assetlist" class="table nowrap dt-responsive align-middle table-hover table-bordered" style="width:100%">
+                    <thead class="table-light">
+                        <tr>
+                            <th>CC No</th>
+                            <th>Title</th>
+                            <th>Initiated</th>
+                            <th>Scope / signatures</th>
+                            <th>Status</th>
+                            <th>Verified By</th>
+                            <th>Documents</th>
+                            <th width="5%" class="not-export-col"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var c in Model)
+                        {
+                            <tr>
+                                <td><a asp-action="Details" asp-route-id="@c.id"><strong>@c.cc_number</strong></a></td>
+                                <td>@c.title</td>
+                                <td>@c.initiated_on?.ToString("dd-MMM-yyyy")</td>
+                                <td>@c.applicability @c.plant_reference<div class="small" style="white-space:pre-line">@c.signature_summary</div></td>
+                                <td>
+                                    @if (c.status == "VERIFIED") { <span class="badge bg-success">Verified</span> }
+                                    else { <span class="badge bg-warning">@c.status</span> }
+                                </td>
+                                <td>@c.verified_by_name <br /><small class="text-muted">@c.verified_at?.ToString("dd-MMM-yyyy HH:mm")</small></td>
+                                <td>@c.document_count</td>
+                                <td>
+                                    @if (c.status is "UNVERIFIED" or "PENDING_APPROVAL")
+                                    {
+                                        <button type="button" class="btn btn-sm btn-soft-success cc-sign" data-id="@c.id" data-action="@(c.status=="UNVERIFIED"?"VERIFY":"APPROVE")" data-number="@c.cc_number">
+                                            @(c.status=="UNVERIFIED"?"Verify & sign":"Approve & sign")
+                                        </button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<partial name="_ReasonModal" />
+<div class="modal fade" id="cc-sign-modal" tabindex="-1" aria-labelledby="cc-sign-title" aria-hidden="true"><div class="modal-dialog"><div class="modal-content">
+ <form asp-action="Sign" method="post" autocomplete="off"><div class="modal-header"><h5 id="cc-sign-title" class="modal-title">Sign change control</h5><button class="btn-close" type="button" data-bs-dismiss="modal" aria-label="Close"></button></div>
+ <div class="modal-body"><input name="id" id="cc-sign-id" type="hidden" /><input name="action" id="cc-sign-action" type="hidden" />
+ <p id="cc-sign-meaning"></p><label class="form-label">User ID</label><input name="signatureUserName" class="form-control mb-2" value="@ViewBag.SignerName" required />
+ <label class="form-label">Password</label><input name="signaturePassword" type="password" autocomplete="new-password" class="form-control mb-2" required />
+ <label class="form-label">Remarks</label><textarea name="remarks" class="form-control mb-2" maxlength="512"></textarea>
+ <label><input name="meaningAcknowledged" type="checkbox" value="true" required /> I apply my electronic signature with the meaning shown.</label></div>
+ <div class="modal-footer"><button class="btn btn-primary" type="submit">Sign</button></div></form></div></div></div>
+<partial name="_AdminTableJS" />
+<script>
+
+    document.addEventListener('DOMContentLoaded', function () { initAdminTable('#assetlist', [0, 1, 2, 3, 4, 5, 6], [[2, 'desc']]); });
+    document.addEventListener('click',function(e){var b=e.target.closest('.cc-sign');if(!b)return;document.getElementById('cc-sign-id').value=b.dataset.id;document.getElementById('cc-sign-action').value=b.dataset.action;document.getElementById('cc-sign-title').textContent=b.dataset.number;document.getElementById('cc-sign-meaning').textContent=b.dataset.action==='VERIFY'?'Change control verified by':'Change control approved by';bootstrap.Modal.getOrCreateInstance(document.getElementById('cc-sign-modal')).show();});
+</script>

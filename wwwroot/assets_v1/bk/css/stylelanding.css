@@ -1,0 +1,200 @@
+  body, html {
+            height: 90%;
+            margin: 0;
+           overflow: auto; 
+          
+        }
+        .content {
+            align-items: flex-start; /* Aligns content to the left */
+        }
+        footer {
+            width: 100%;
+            height: 4rem; /* Set the height of the footer */
+        }
+        
+           
+   
+    .background-image {
+    position: relative; /* Add position relative */
+    z-index: 1;
+   background-image: url('bg.jpg'); /* Add your image URL */
+        background-size: cover;
+        background-position: center center;
+        background-repeat: no-repeat;
+        background-attachment: fixed;
+  /*  background-image: linear-gradient(to right, #af40ff, #505151, #5b42f3, #00ddeb); */
+
+    width: 100%;
+    height: 100%; /* You can adjust the height as needed */
+    overflow: hidden;
+}
+
+.background-image::before {
+    content: ""; /* Add content property */
+    position: absolute; /* Change position to absolute */
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-image: url('bg.png'); /* Ensure the path to your image is correct */
+    background-position: center;
+    background-repeat: no-repeat;
+    background-size: cover;
+    opacity: 0.8;
+    z-index: -1;
+    filter: blur(8px); /* Add blur effect */
+}
+
+
+  .logo-grid-item {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    min-width: 100px;
+    height: 100px;
+    border-radius: 10px;
+    color: #fff;
+    text-decoration: none;
+    box-shadow: 0 20px 20px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.5s ease;
+    position: relative; /* Needed for submenu positioning */
+}
+
+.title
+{
+     text-decoration: none;
+     color: red;
+     font-style: italic;
+     font-weight: 700;
+     /* background-color: red;
+     color: white;
+     font-weight: bold;
+     text-align: center;
+     width: 300px;
+     border-radius: 10px; */
+     padding: 10px;
+    box-shadow: 0 20px 20px rgba(0, 0, 0, 0.1);
+    transition: transform 0.3s ease, box-shadow 0.5s ease;
+}
+
+.logo-grid-item:hover {
+    transform: translateY(-10px) scale(1.50); /* Added scaling effect */
+    box-shadow: 0 50px 30px rgba(132, 1, 1, 0.2);
+}
+
+
+.grid-container {
+display: grid;
+grid-template-columns: repeat(8, 1fr); /* Creates a 3-column grid */
+width: 600px;
+height: auto;
+gap: 20px; /* Adjusts the gap between grid items */
+padding: 0px; /* Adjusts the padding around the entire grid */
+margin-top: 0px;
+justify-content: center; /* Centers grid items horizontally if they don't fill the entire width */
+align-items: center; /* Aligns grid items vertically */
+margin: auto; /* Centers the grid container */
+}
+
+.special-item {
+transform: translateY(-10px) scale(1.50); /* Added scaling effect */
+box-shadow: 
+0 5px 10px rgba(0, 149, 255, 0.1),
+0 10px 20px rgba(147, 146, 146, 0.1),
+0 15px 30px rgba(100, 100, 100, 0.1),
+0 20px 40px rgba(0, 0, 0, 0.2); 
+
+transition: filter 0.3s ease;
+border: 5px solid #ffffff;
+
+z-index: 10; /* Ensure the hovered item is on top */
+position: relative; /* Required for z-index to work effectively */
+
+background: linear-gradient(145deg, #818cf8, #bfdbfe);
+
+transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease, z-index 0s; /* Adding z-index to transition */
+
+top: 10%; left: 0%; transform: translateY(-10%) translateY(0%) scale(1.50);
+}
+
+.navbar-grid-item {
+background-image: radial-gradient(circle at 30% 107%, #af40ff 0%, #505151 5%, #5b42f3 60%, #00ddeb 90%);
+
+color: #ededed;
+text-decoration: none;
+font-size: 120%;
+
+border: 5px solid #bcbcbc;
+
+box-shadow: rgba(0, 0, 0, 0.17) 0px -23px 25px 0px inset, rgba(0, 0, 0, 0.15) 0px -36px 30px 0px inset, rgba(0, 0, 0, 0.1) 0px -79px 40px 0px inset, rgba(0, 0, 0, 0.06) 0px 2px 1px, rgba(0, 0, 0, 0.09) 0px 4px 2px, rgba(0, 0, 0, 0.09) 0px 8px 4px, rgba(0, 0, 0, 0.09) 0px 16px 8px, rgba(0, 0, 0, 0.09) 0px 32px 16px;
+
+transition: transform 0.3s ease, box-shadow 0.3s ease, background-image 0.3s ease, filter 0.3s ease; /* Consolidated transitions */
+position: relative;
+overflow: hidden;
+}
+
+.grid-item {
+display: flex;
+flex-direction: column;
+align-items: center;
+justify-content: center;
+width: 130px; /* Diameter of the circle */
+height: 130px; /* Diameter of the circle, equal to width for a perfect circle */
+border-radius: 10%; /* Makes the element a circle */
+// background: linear-gradient(145deg, #e4e3e4, #3f3f3f);
+// background: linear-gradient(145deg, #04489a, #bfdbfe);
+background-image: radial-gradient(circle at 30% 107%, #af40ff 0%, #505151 5%, #5b42f3 60%, #00ddeb 90%);
+// background-image: radial-gradient(circle at 30% 107%, #e39dff 0%, #c300ff 50%, #8f8c8c 75%, #013f58 100%);
+color: #ededed;
+text-decoration: none;
+font-size: 120%;
+
+border: 5px solid #bcbcbc;
+
+box-shadow: rgba(0, 0, 0, 0.17) 0px -23px 25px 0px inset, rgba(0, 0, 0, 0.15) 0px -36px 30px 0px inset, rgba(0, 0, 0, 0.1) 0px -79px 40px 0px inset, rgba(0, 0, 0, 0.06) 0px 2px 1px, rgba(0, 0, 0, 0.09) 0px 4px 2px, rgba(0, 0, 0, 0.09) 0px 8px 4px, rgba(0, 0, 0, 0.09) 0px 16px 8px, rgba(0, 0, 0, 0.09) 0px 32px 16px;
+
+transition: transform 0.3s ease, box-shadow 0.3s ease, background-image 0.3s ease, filter 0.3s ease; /* Consolidated transitions */
+position: relative;
+overflow: hidden;
+}
+
+
+
+
+/* Ensuring text and icons are above the pseudo-elements */
+.grid-item i, .grid-item div {
+position: relative;
+z-index: 3; /* Above both ::before and ::after pseudo-elements */
+}
+
+@keyframes rotBGimg {
+from {
+transform: rotate(0deg);
+}
+to {
+transform: rotate(360deg);
+}
+}
+
+
+.grid-item:hover {
+transform: translateY(-10px) scale(1.20); /* Added scaling effect */
+box-shadow: 
+0 5px 10px rgba(0, 149, 255, 0.1),
+0 10px 20px rgba(147, 146, 146, 0.1),
+0 15px 30px rgba(100, 100, 100, 0.1),
+0 20px 40px rgba(0, 0, 0, 0.2); 
+
+transition: filter 0.3s ease;
+color: black;
+border: 5px solid #ffffff;
+
+z-index: 10; /* Ensure the hovered item is on top */
+position: relative; /* Required for z-index to work effectively */
+//  background: linear-gradient(744deg,#c30101,#940000 60%,#fe0000);
+// background: linear-gradient(145deg, red, #414141);
+background: linear-gradient(145deg, #818cf8, #bfdbfe);
+// background-image: radial-gradient(circle at 30% 107%, #af40ff 0%, #505151 5%, #5b42f3 60%, #00ddeb 90%);
+transition: transform 0.3s ease, box-shadow 0.3s ease, background 0.3s ease, z-index 0s; /* Adding z-index to transition */
+}

@@ -1,0 +1,33 @@
+@using DMS.Model.Documents
+@model DocumentVersion
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["PageTitle"] = "Attach a PDF rendition";
+    ViewData["Section"] = "Documents";
+    var d = (DocumentDetail)ViewBag.document;
+    var c = (DMS.Web.Services.Rendition.ConverterStatus)ViewBag.converter;
+}
+<partial name="_AdminPageTitle" />
+<div class="row">
+    <div class="col-xl-8">
+        <div class="card">
+            <div class="card-header"><h4 class="card-title mb-0">@d.document_number rev @Model.display_revision · @Model.source_file_name</h4></div>
+            <div class="alert @(c.IsAvailable ? "alert-info" : "alert-warning") py-2 m-3 mb-0 small">
+                Converter: @c.Message @(c.Version == null ? "" : "(" + c.Version + ")")
+                @if (c.IsAvailable) { <text>The PDF is normally produced automatically - attach one only when the conversion does not reproduce the document faithfully.</text> }
+            </div>
+            <div class="card-body">
+                <p class="small text-muted">The PDF you attach becomes the base of the controlled copy of this revision: the application stamps it with the state
+                    watermark, a footer on every page and the signature page. Make sure it is the same content as @Model.source_file_name (SHA-256 of the source is recorded with it).</p>
+                <form asp-action="AttachRendition" method="post" enctype="multipart/form-data" class="row g-3">
+                    <input type="hidden" name="id" value="@d.id" /><input type="hidden" name="versionId" value="@Model.id" />
+                    <div class="col-12"><input type="file" name="file" accept=".pdf,application/pdf" class="form-control" required /></div>
+                    <div class="col-12 d-flex gap-2">
+                        <button class="btn btn-primary" type="submit">Attach</button>
+                        <a class="btn btn-light" asp-action="Details" asp-route-id="@d.id">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

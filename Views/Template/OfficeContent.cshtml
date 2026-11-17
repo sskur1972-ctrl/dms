@@ -1,0 +1,32 @@
+@using DMS.Web.Services.DocumentEditor
+@model EditorSession
+@{
+ Layout="~/Views/Shared/_Layout.cshtml";
+ ViewData["PageTitle"]="Template editor";
+ ViewData["EditorWorkspace"]=true;
+ if(Model!=null){var origin=new Uri(Model.LaunchUrl).GetLeftPart(UriPartial.Authority);
+ Context.Response.Headers["Content-Security-Policy"]=$"frame-src 'self' {origin}; form-action 'self' {origin}; frame-ancestors 'self'; base-uri 'self'";}
+}
+<link rel="stylesheet" href="~/css/editor-workspace.css" asp-append-version="true" />
+<div class="dms-editor-toolbar">
+ <strong>@(Model?.Title??"Template editor")</strong>
+ <div class="d-flex gap-2 align-items-center"><span id="dms-editor-status" role="status">@(Model!=null?"Loading template…":"")</span>
+ <a class="btn btn-sm btn-outline-secondary" asp-action="Index">Back to templates</a></div>
+</div>
+@if(Model==null){<div class="alert alert-warning" role="alert">@ViewBag.error</div>}
+else{
+ <form id="dms-editor-csrf" hidden>@Html.AntiForgeryToken()</form>
+ <script id="editor-settings" type="application/json">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model))</script>
+ <div id="dms-editor-shell" class="dms-editor-shell" data-provider="@Model.Provider">
+ <section class="dms-editor-pane" aria-label="Template editor">
+ @if(Model.Transport=="FORM_POST"){
+  <form id="dms-editor-launch" target="dms-editor-frame" action="@Model.LaunchUrl" method="post" asp-antiforgery="false">
+   @foreach(var field in Model.PostFields){<input type="hidden" name="@field.Key" value="@field.Value" />}
+  </form>
+  <iframe id="dms-editor-frame" name="dms-editor-frame" title="Template editor" referrerpolicy="no-referrer" allowfullscreen></iframe>
+ }else{<div id="dms-vendor-editor"></div>}
+ </section></div>
+ <script src="~/js/editor/collabora-adapter.js" asp-append-version="true"></script>
+ <script src="~/js/editor/callback-adapters.js" asp-append-version="true"></script>
+ <script src="~/js/editor/template-editor.js" asp-append-version="true"></script>
+}

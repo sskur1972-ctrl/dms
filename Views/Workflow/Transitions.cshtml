@@ -1,0 +1,79 @@
+@using DMS.Model.Master
+@model List<StateTransition>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["PageTitle"] = "State Transitions";
+}
+<partial name="_DataTableCSS" />
+<partial name="_AdminPageTitle" />
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-header border-0">
+                <div class="row g-3 align-items-center">
+                    <div class="col-sm text-muted">The allowed moves of a document between states. Transitions are part of the validated workflow: they can be switched off or on (with a reason), not created or deleted here.</div>
+                    <div class="col-sm-auto ms-auto"><a class="btn btn-primary" asp-action="Index">Workflow Stages</a></div>
+                </div>
+            </div>
+            <div class="card-body">
+                <table id="assetlist" class="table nowrap dt-responsive align-middle table-hover table-bordered" style="width:100%">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Order</th>
+                            <th>Action</th>
+                            <th>From</th>
+                            <th>To</th>
+                            <th>Type</th>
+                            <th>Permission</th>
+                            <th>E-Signature</th>
+                            <th>Needs</th>
+                            <th>Status</th>
+                            <th width="5%" class="not-export-col"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var t in Model)
+                        {
+                            var needs = new List<string>();
+                            if (t.requires_comment) needs.Add("comment");
+                            if (t.requires_reason) needs.Add("reason");
+                            if (t.requires_change_control) needs.Add("change control");
+                            if (t.is_rejection) needs.Add("rejection");
+                            if (t.is_controller_override) needs.Add("override");
+                            <tr>
+                                <td>@t.display_order</td>
+                                <td><strong>@t.action_label</strong><br /><small class="text-muted">@t.action_code</small></td>
+                                <td>@t.from_state_name</td>
+                                <td>@t.to_state_name</td>
+                                <td>@(t.document_type_code ?? "All")</td>
+                                <td>@t.required_permission</td>
+                                <td>@(t.requires_signature ? t.signature_meaning ?? "Yes" : "No")</td>
+                                <td>@string.Join(", ", needs)</td>
+                                <td>
+                                    @if (t.is_active) { <span class="badge bg-success-subtle text-success">Active</span> }
+                                    else { <span class="badge bg-danger-subtle text-danger">Inactive</span> }
+                                </td>
+                                <td>
+                                    <button type="button" class="btn btn-sm @(t.is_active ? "btn-soft-danger" : "btn-soft-success")" onclick="openReasonModal(this)"
+                                            data-url="@Url.Action("SetTransitionActive")"
+                                            data-fields='@Json.Serialize(new { id = t.id, isActive = !t.is_active })'
+                                            data-title="@(t.is_active ? "Deactivate" : "Activate") transition @t.action_code"
+                                            data-text="@t.from_state_code → @t.to_state_code">
+                                        @(t.is_active ? "Deactivate" : "Activate")
+                                    </button>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<partial name="_ReasonModal" />
+<partial name="_AdminTableJS" />
+<script>
+    document.addEventListener('DOMContentLoaded', function () { initAdminTable('#assetlist', [0, 1, 2, 3, 4, 5, 6, 7, 8], [[0, 'asc']]); });
+</script>

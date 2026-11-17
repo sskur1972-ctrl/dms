@@ -1,0 +1,30 @@
+body.dms-editor-workspace .app-menu,
+body.dms-editor-workspace .vertical-overlay,
+body.dms-editor-workspace .footer { display: none !important; }
+body.dms-editor-workspace .main-content { margin-left: 0 !important; }
+body.dms-editor-workspace #page-topbar { left: 0 !important; }
+body.dms-editor-workspace .page-content { padding: 70px 8px 0 !important; }
+body.dms-editor-workspace .container-fluid { padding: 0 4px; }
+.dms-editor-toolbar { display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:8px; padding:8px; background:white; }
+.dms-editor-shell { display:flex; height:calc(100dvh - 114px); min-height:360px; gap:6px; }
+.dms-editor-pane { flex:1 1 auto; min-width:0; background:#f4f6fa; }
+.dms-single-watermark { position:absolute; inset:0; display:flex; align-items:center; justify-content:center; pointer-events:none; z-index:4; overflow:hidden; }
+.dms-single-watermark span { font-size:clamp(54px,8vw,110px); font-weight:700; color:#555; opacity:.14; transform:rotate(-35deg); white-space:nowrap; }
+@media print { body.dms-editor-workspace { display:none !important; } }
+.dms-editor-pane iframe { width:100%; height:100%; border:1px solid #d8dee8; display:block; }
+.dms-comment-pane { flex:0 0 340px; overflow-y:auto; border:1px solid #d8dee8; background:white; }
+.dms-comment-pane [class*="col-md-"] { width:100%; }
+.dms-comment-pane .card { margin:0; border:0; }
+.dms-comment-pane .card-header, .dms-comment-pane .card-body { padding:10px; }
+.dms-comment-pane .card-title { font-size:14px; }
+.dms-comment-pane .card-body { display:flex; flex-direction:column; }
+.dms-comment-pane .dms-review-history { order:2; }
+.dms-comment-pane .card-body > details { order:3; }
+.dms-comment-pane #dms-add-comment { border-top:0 !important; padding-top:0 !important; }
+.dms-comment-pane .dms-review-history { border-top:1px solid #d8dee8; margin-top:12px; padding-top:10px; }
+#dms-comment-status:empty { display:none; }
+#dms-comment-status:not(:empty) { padding:8px 10px; }
+.dms-editor-shell.comments-hidden .dms-comment-pane { display:none; }
+@media(max-width:800px) { .dms-editor-shell { flex-direction:column; height:auto; } .dms-editor-pane { height:70dvh; flex:none; } .dms-comment-pane { flex:none; width:100%; max-height:50dvh; } }
+
+.dms-editor-pane{position:relative}#dms-vendor-editor{height:100%;min-height:65vh}#dms-location-overlay{position:absolute;inset:0;background:white;z-index:10;padding:12px}#dms-location-overlay[hidden]{display:none}#dms-location-frame{width:100%;height:calc(100% - 75px);border:0}

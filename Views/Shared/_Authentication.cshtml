@@ -1,0 +1,142 @@
+﻿@*<div class="modal fade zoomIn" id="showUserModal" tabindex="-1" aria-labelledby="exampleModalLabel" aria-hidden="true">
+
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+
+        <div class="modal-content border-0">
+
+            <div class="modal-header p-3 bg-soft-info">
+
+                <h5 class="modal-title" id="exampleModalLabel">User Registration</h5>
+
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close" id="close-modal"></button>
+
+            </div>
+
+            <form asp-action="Create" class="row g-3 needs-validation" novalidate id="frmUser">
+                <div class="modal-body">
+
+                    <input type="hidden" name="CustomerID" id="CustomerID" value="" />
+
+                    <div class="row g-3">
+
+                        <div class="col-lg-6">
+
+                            <label asp-for="UserName" class="form-label"></label>
+                            <input asp-for="UserName" required class="form-control" placeholder="User First Name" />
+                            <span asp-validation-for="UserName" class="text-danger"></span>
+                            <div class="invalid-feedback">
+
+                                Please Enter First Name.
+
+                            </div>
+
+                            <div class="valid-feedback">
+
+                                Looks good!
+
+                            </div>
+
+                        </div>
+
+                        <!--end col-->
+
+                        <div class="col-lg-6">
+
+                            <div>
+
+                                <label for="cPassword" class="form-label">Last Name</label>
+
+                                <input type="password" id="cPassword" name="cPassword" class="form-control" placeholder="User Last Name" value="" required />
+
+                                <div class="invalid-feedback">
+
+                                    Please Enter Last Name.
+
+                                </div>
+
+                                <div class="valid-feedback">
+
+                                    Looks good!
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        <!--end col-->
+
+                        <div class="col-lg-6">
+
+                            <div>
+
+                                <label for="cEmail" class="form-label">Email</label>
+
+                                <input type="email" id="cEmail" name="cEmail" class="form-control" placeholder="User Email" required />
+
+                                <div class="invalid-feedback">
+
+                                    Please Enter User Email.
+
+                                </div>
+
+                                <div class="valid-feedback">
+
+                                    Looks good!
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                        <div class="col-lg-6">
+
+                            <div>
+
+                                <label for="cMobile" class="form-label">Mobile</label>
+
+                                <input type="number" id="cMobile" name="cMobile" class="form-control" placeholder="User Phone Number" required />
+
+                                <div class="invalid-feedback">
+
+                                    Please Enter User Phone Number.
+
+                                </div>
+
+                                <div class="valid-feedback">
+
+                                    Looks good!
+
+                                </div>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                    <!--end row-->
+
+                </div>
+
+                <div class="modal-footer">
+
+                    <div class="hstack gap-2 justify-content-end">
+
+                        <button type="button" class="btn btn-light" id="close-modal" data-bs-dismiss="modal">Close</button>
+
+                        <button type="button" class="btn btn-success" id="btnsubmit">Save</button>
+
+                    </div>
+
+                </div>
+
+            </form>
+
+        </div>
+
+    </div>
+
+</div>
+*@

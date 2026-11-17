@@ -1,0 +1,73 @@
+@using DMS.Web.Services.Intelligence
+@model IntelligenceReview
+@{
+    ViewData["PageTitle"]="Advisory compliance review"; Layout="~/Views/Shared/_Layout.cshtml";
+    var observations=ReviewPresentation.Observations(Model); var coverage=ReviewPresentation.Coverage(Model);
+    var aiComplete=Model.ModelStatus=="COMPLETE"; var blocked=Model.ModelStatus is "FAILED" or "WITHHELD";
+    var high=observations.Count(f=>f.Severity=="HIGH"); var medium=observations.Count(f=>f.Severity=="MEDIUM");
+    var low=observations.Count(f=>f.Severity is "LOW" or "INFO");
+    var focus=new[]{("01","Regulatory alignment","Applicable requirements, approved references and company procedures."),("02","Gap identification","Missing sections, incomplete records and procedural inconsistencies."),("03","Risk assessment","Observations for QA to assess against quality, safety and data integrity."),("04","Corrective actions","Proposed corrections and CAPA decisions for QA assessment."),("05","Inspection readiness","Traceable evidence and complete controlled documentation."),("06","Continuous improvement","Verify effectiveness and prevent recurring observations.")};
+}
+<link rel="stylesheet" href="~/css/advisory-review.css" asp-append-version="true" />
+<div class="ar-workspace">
+    <header class="ar-hero">
+        <div class="ar-hero-main"><div class="ar-eyebrow"><span class="ar-spark">✧</span> DOCUMENT QUALITY · QA WORKSPACE</div>
+            <h1>Advisory compliance review</h1><p>Identify gaps. Prioritize risk. Build a clear path to corrective action.</p>
+            <div class="ar-document"><span class="ar-doc-icon" aria-hidden="true">▤</span><strong>@ViewBag.DocumentNumber</strong>@if(ViewBag.Revision!=null){<span class="ar-revision">Rev @ViewBag.Revision</span>}<span class="ar-doc-title">@ViewBag.DocumentTitle</span></div>
+        </div>
+        <div class="ar-hero-actions">
+            <a class="ar-button ar-button-ghost" asp-action="Document" asp-route-versionId="@ViewBag.Version">← Document intelligence</a>
+            @if(ViewBag.CanReview==true){<form asp-action="Review" method="post"><input type="hidden" name="versionId" value="@ViewBag.Version"/><button class="ar-button ar-button-white" type="submit">↻ Run new review</button></form>}
+        </div>
+    </header>
+    <div class="ar-metadata"><span><span class="ar-dot @(aiComplete?"is-green":blocked?"is-red":"is-amber")"></span>@ReviewPresentation.Status(Model.ModelStatus)</span><span>Reviewed @Model.ReviewedAt.ToString("dd MMM yyyy · HH:mm") UTC</span><span>QA assessment required</span></div>
+    <div class="ar-stats">
+        <article class="ar-stat"><span>Total observations</span><strong>@observations.Count</strong><small>@Model.Findings.Count QA rules · @Model.AiFindings.Count AI findings</small></article>
+        <article class="ar-stat ar-stat-high"><span>High priority</span><strong>@high</strong><small>Prioritize for QA risk assessment</small></article>
+        <article class="ar-stat ar-stat-medium"><span>Medium priority</span><strong>@medium</strong><small>Assess impact and required correction</small></article>
+        <article class="ar-stat"><span>Low / informational</span><strong>@low</strong><small>Clarifications and improvement opportunities</small></article>
+    </div>
+    @if(!aiComplete){<div class="ar-notice" role="status"><span class="ar-notice-icon" aria-hidden="true">!</span><div><strong>@(blocked?"The AI assessment has not been completed.":Model.ModelStatus=="PARTIAL"?"This assessment covers only part of the document.":"This assessment contains configured QA checks only.")</strong><p>@(Model.ModelStatus=="WITHHELD"?"Reference access changed. Run a new review to refresh findings and evidence.":"Available QA observations are shown below. Complete the AI review and human QA assessment before drawing a compliance conclusion.")</p></div></div>}
+    <div class="ar-layout"><main class="ar-main">
+        <div class="ar-tabs" role="tablist" aria-label="Review workspace">
+            <button type="button" id="ar-tab-overview" role="tab" aria-controls="ar-overview" aria-selected="true" tabindex="0" data-ar-tab="overview">Overview</button>
+            <button type="button" id="ar-tab-findings" role="tab" aria-controls="ar-findings" aria-selected="false" tabindex="-1" data-ar-tab="findings">Observations <span>@observations.Count</span></button>
+            <button type="button" id="ar-tab-actions" role="tab" aria-controls="ar-actions" aria-selected="false" tabindex="-1" data-ar-tab="actions">Action plan</button>
+            <button type="button" id="ar-tab-evidence" role="tab" aria-controls="ar-evidence" aria-selected="false" tabindex="-1" data-ar-tab="evidence">Evidence <span>@Model.References.Count</span></button>
+        </div>
+        <section id="ar-overview" role="tabpanel" aria-labelledby="ar-tab-overview" data-ar-panel="overview">
+            <div class="ar-section-heading"><div><div class="ar-kicker">ASSESSMENT SCOPE</div><h2>From observations to inspection readiness</h2></div></div>
+            <p class="ar-muted">Use this review to inform QA decisions on the document and its supporting evidence.</p>
+            <div class="ar-focus-grid">@foreach(var item in focus){<article class="ar-focus"><span class="ar-focus-number">@item.Item1</span><h3>@item.Item2</h3><p>@item.Item3</p></article>}</div>
+            <div class="ar-coverage"><div class="ar-section-heading"><div><h3>AI review coverage</h3><p>@Model.ReviewedCharacters.ToString("N0") of @Model.TotalCharacters.ToString("N0") characters reviewed</p></div><strong>@coverage<span>%</span></strong></div><div class="ar-progress" role="progressbar" aria-label="AI review coverage" aria-valuemin="0" aria-valuemax="100" aria-valuenow="@coverage"><span style="width:@(coverage)%"></span></div><small>@Model.CompletedBatches of @Model.TotalBatches review batches completed. Coverage describes processing, not compliance.</small></div>
+            <div class="ar-next"><div><h3>@(observations.Count>0?"Start with the observations":"Complete the assessment")</h3><p>@(observations.Count>0?"Review each finding, confirm its impact and decide whether a correction or CAPA is needed.":"No observations were recorded by the completed checks. Review coverage and supporting evidence before QA assessment.")</p></div><button class="ar-button ar-button-green" type="button" data-ar-open="findings">Review observations →</button></div>
+        </section>
+        <section id="ar-findings" role="tabpanel" aria-labelledby="ar-tab-findings" data-ar-panel="findings" hidden>
+            <div class="ar-section-heading"><div><div class="ar-kicker">GAPS & OBSERVATIONS</div><h2>Prioritize what needs attention</h2></div><span id="ar-filter-count" class="ar-count" aria-live="polite">@observations.Count observations</span></div>
+            <div class="ar-filters"><label class="ar-search"><span>Search observations</span><input id="ar-search" type="search" placeholder="Finding, recommendation or section…" /></label><label><span>Severity</span><select id="ar-severity"><option value="">All priorities</option><option>HIGH</option><option>MEDIUM</option><option>LOW</option><option>INFO</option></select></label><label><span>Source</span><select id="ar-source"><option value="">All sources</option><option value="QA rule">QA rules</option><option value="AI review">AI review</option></select></label></div>
+            @foreach(var f in observations){<article class="ar-observation" data-ar-observation data-severity="@f.Severity" data-source="@f.Source"><div class="ar-observation-top"><span class="ar-severity ar-severity-@f.Severity.ToLowerInvariant()">@f.Severity</span><span class="ar-observation-id">@f.Id</span><span class="ar-source">@f.Source</span></div><h3>@f.Finding</h3><div class="ar-section-label">Section · @f.Section</div><div class="ar-recommendation"><strong>Recommended action</strong><p>@(string.IsNullOrWhiteSpace(f.Recommendation)?"QA to assess this observation and define an appropriate action.":f.Recommendation)</p></div>@if(!string.IsNullOrWhiteSpace(f.Evidence)){<details class="ar-evidence-quote"><summary>View document evidence</summary><blockquote>@f.Evidence</blockquote></details>}else{<p class="ar-missing-evidence">@(f.Source=="QA rule"?"Document-wide rule observation; confirm the details against the source document.":"No document quotation supplied. Verify the potentially missing content with QA.")</p>}@if(f.Citations.Count>0){<div class="ar-citations">Supporting references @foreach(var cite in f.Citations){<a href="#@cite" data-ar-citation="@cite">[@cite]</a>}</div>}</article>}
+            <div class="ar-empty" id="ar-no-matches" hidden><strong>No matching observations</strong><p>Try another search term or clear the severity and source filters.</p></div>
+            @if(observations.Count==0){<div class="ar-empty"><strong>No observations recorded</strong><p>@(aiComplete?"Human QA assessment is still required.":"The AI assessment is not complete. This is not a finding of compliance.")</p></div>}
+        </section>
+        <section id="ar-actions" role="tabpanel" aria-labelledby="ar-tab-actions" data-ar-panel="actions" hidden>
+            <div class="ar-section-heading"><div><div class="ar-kicker">CORRECTIONS & CAPA PLANNING</div><h2>Turn findings into proposed actions</h2></div></div><p class="ar-muted">QA determines risk, CAPA applicability, ownership and target dates. These recommendations have not been assigned or verified as completed.</p>
+            @if(ViewBag.CanExportReview==true){<a class="ar-button ar-button-green ar-plan-export" asp-action="ExportReview" asp-route-versionId="@ViewBag.Version" asp-route-actionPlan="true">↓ Download action-plan worksheet</a>}
+            @foreach(var f in observations){<article class="ar-action"><div><span class="ar-observation-id">@f.Id</span><span class="ar-severity ar-severity-@f.Severity.ToLowerInvariant()">@f.Severity</span></div><h3>@f.Finding</h3><p>@(string.IsNullOrWhiteSpace(f.Recommendation)?"Define the action after QA assessment.":f.Recommendation)</p><div class="ar-action-fields"><span>Owner <strong>To be assigned</strong></span><span>Target date <strong>To be agreed</strong></span><span>CAPA decision <strong>QA assessment pending</strong></span></div></article>}
+            @if(observations.Count==0){<div class="ar-empty"><strong>No proposed actions yet</strong><p>Complete the review, then use confirmed observations to prepare an action plan.</p></div>}
+            <div class="ar-guidance"><strong>Close the loop with evidence</strong><p>Record approved corrections, completion evidence and effectiveness verification in your controlled QA/CAPA process. This advisory result does not record action closure.</p></div>
+        </section>
+        <section id="ar-evidence" role="tabpanel" aria-labelledby="ar-tab-evidence" data-ar-panel="evidence" hidden>
+            <div class="ar-section-heading"><div><div class="ar-kicker">TRACEABILITY & SUPPORT</div><h2>Evidence behind the assessment</h2></div></div><p class="ar-muted">Reference excerpts support assessment of observations. They do not demonstrate that corrective actions have been completed.</p>
+            @foreach(var source in Model.References){<details id="@source.Citation" class="ar-reference"><summary><span class="ar-reference-id">@source.Citation</span><span><strong>@source.Title</strong><small>@source.Section @(source.Page.HasValue?$" · Page {source.Page}":"")</small></span><span class="ar-reference-toggle" aria-hidden="true">＋</span></summary><blockquote>@source.Text</blockquote>@if(source.DocumentId!=null){<a class="ar-reference-link" asp-controller="Documents" asp-action="Read" asp-route-id="@source.DocumentId" asp-route-versionId="@source.VersionId" target="_blank" rel="noopener">Open reference document ↗</a>}else if(source.KnowledgeId!=null){<a class="ar-reference-link" asp-action="Reference" asp-route-id="@source.KnowledgeId" target="_blank" rel="noopener">Open approved reference ↗</a>}</details>}
+            @if(Model.References.Count==0){<div class="ar-empty"><span class="ar-empty-icon" aria-hidden="true">▤</span><strong>No supporting references in this result</strong><p>@(blocked?"The AI assessment did not complete. Referenced evidence could not be recorded.":"No supporting reference excerpts were recorded. Check applicable approved references during QA assessment.")</p></div>}
+        </section>
+    </main><aside class="ar-sidebar">
+        <section class="ar-side-card"><div class="ar-kicker">REVIEW DELIVERABLES</div><h2>Your assessment pack</h2><div class="ar-deliverable"><span>▤</span><div><strong>Compliance review report</strong><small>@(aiComplete?"AI assessment complete · QA decision pending":"Incomplete assessment · available checks only")</small></div></div><div class="ar-deliverable"><span>≡</span><div><strong>Observations & recommendations</strong><small>@observations.Count recorded observations</small></div></div><div class="ar-deliverable"><span>↗</span><div><strong>Risk & action plan</strong><small>Initial severity · QA triage required</small></div></div><div class="ar-deliverable"><span>◇</span><div><strong>Evidence & follow-up</strong><small>@Model.References.Count references · closure not verified</small></div></div>
+            @if(ViewBag.CanExportReview==true){<a class="ar-button ar-button-green ar-full" asp-action="ExportReview" asp-route-versionId="@ViewBag.Version">↓ Download review report</a><a class="ar-button ar-button-outline ar-full" asp-action="ExportReview" asp-route-versionId="@ViewBag.Version" asp-route-actionPlan="true">↓ Action-plan worksheet</a>}
+        </section>
+        <section class="ar-side-card"><div class="ar-kicker">QA FOLLOW-THROUGH</div><h2>Keep the review moving</h2><ol class="ar-steps"><li><strong>Assess observations</strong><span>Confirm gaps and evaluate their impact.</span></li><li><strong>Agree corrective actions</strong><span>Decide on CAPA, owners and target dates.</span></li><li><strong>Record completion evidence</strong><span>Link approved records and updated documents.</span></li><li><strong>Verify effectiveness</strong><span>Confirm the correction prevents recurrence.</span></li></ol></section>
+        <p class="ar-advisory">This review supports human QA assessment. It does not approve, reject or certify the document.</p>
+        @if(ViewBag.CanConfigureAi==true && Model.Warnings.Count>0){<details class="ar-diagnostics"><summary>Administrator diagnostics</summary>@foreach(var warning in Model.Warnings){<p>@warning</p>}<a asp-action="Settings">AI configuration →</a></details>}
+    </aside></div>
+</div>
+<script src="~/js/advisory-review.js" asp-append-version="true" defer></script>

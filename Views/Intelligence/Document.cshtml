@@ -1,0 +1,12 @@
+@using DMS.Web.Services.Intelligence
+@model IntelligenceIndex
+@{ViewData["PageTitle"]="Document intelligence";Layout="~/Views/Shared/_Layout.cshtml";}
+<partial name="_AdminPageTitle" />
+<div class="card"><div class="card-body">
+@if(TempData["IntelligenceMessage"] is string notice){<p role="status">@notice</p>}
+<div class="d-flex gap-2 mb-3"><form asp-action="Process" method="post"><input type="hidden" name="versionId" value="@ViewBag.Version" /><button class="btn btn-primary">Digitize / Reindex</button></form>
+@if(ViewBag.CanReview==true){<form asp-action="Review" method="post"><input type="hidden" name="versionId" value="@ViewBag.Version" /><button class="btn btn-outline-primary">Run advisory compliance review</button></form>}
+<a class="btn btn-light" asp-controller="Documents" asp-action="Details" asp-route-id="@ViewBag.DocumentId">Back to document</a></div>
+@if(ViewBag.HasReview==true){<a class="btn btn-outline-secondary mb-3" asp-action="ReviewResult" asp-route-versionId="@ViewBag.Version">Latest review result</a>}
+@if(Model==null){<p>Document content has not been processed yet.</p>}else{<p><strong>@(Model.Status=="READY"?"Document processing is complete.":"Document processing could not be completed.")</strong></p>@if(Model.Status=="READY"){<h6>Suggested keywords</h6><p>@(string.IsNullOrWhiteSpace(Model.SuggestedKeywords)?"No keywords were suggested.":Model.SuggestedKeywords)</p>}else{<p class="text-muted">Try processing the document again. If the problem continues, contact your administrator.</p>}}
+</div></div>

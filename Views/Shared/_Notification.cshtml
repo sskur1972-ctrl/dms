@@ -1,0 +1,48 @@
+﻿ @*  Copyright (c) 2023-2024 Propix Technologies Pvt. Ltd. All Rights Reserved
+
+THIS IS UNPUBLISHED PROPRIETARY SOURCE CODE OF PROPIX TECHNOLOGIES
+
+Unauthorized copying and redistribution of this file, via any medium
+is strictly prohibited without written permission of Propix Technologies. *@
+
+@if (TempData["Success"] != null)
+{
+    <script type="text/javascript">
+
+        document.addEventListener("DOMContentLoaded", function () {
+             @* Swal.fire("Hey, Good job !!", "You clicked the button !!", "success"); *@
+
+            debugger
+            var Msg = '@TempData["Success"]';
+            var Valid = '@TempData["Valid"]';
+
+            if (Msg != "") {
+
+                if(Valid == "1") {
+                    
+
+                    Swal.fire("", Msg, "success");
+
+                } else if (Valid == "0") {
+                    Swal.fire("", Msg, "error");
+                } else if (Valid == "-1") {
+                    Swal.fire({
+                        title: "",
+                        html: Msg,
+                        type: "error",
+                        button: "Ok",
+                    })
+
+                    Swal.fire({
+                        type: "error",
+                        title: "Oops...",
+                        text: Msg,
+                        button: "Ok",
+
+                    });
+                }
+
+            }
+        });
+    </script>
+} 

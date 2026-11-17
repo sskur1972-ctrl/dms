@@ -1,0 +1,77 @@
+@using DMS.Model.Documents
+@model DocumentEditViewModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["PageTitle"] = "Edit Draft";
+    ViewData["Section"] = "Documents";
+}
+<partial name="_AdminPageTitle" />
+
+<div class="row">
+    <div class="col-xl-12">
+        <div class="card">
+            <div class="card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
+                <h4 class="card-title mb-0">@Model.DocumentNumber · rev @Model.VersionLabel</h4>
+                @if(Model.DocumentVersionId > 0 && !string.IsNullOrWhiteSpace(Model.CurrentFileName))
+                {
+                    @await Html.PartialAsync("_ReindexAction", Model.DocumentVersionId)
+                }
+            </div>
+            <div class="card-body">
+                <form asp-action="Edit" method="post" enctype="multipart/form-data" class="row g-3" onsubmit="this.querySelector('button[type=submit]').disabled = true;">
+                    <input type="hidden" asp-for="DocumentId" />
+                    <input type="hidden" asp-for="DocumentVersionId" />
+                    <input type="hidden" asp-for="ExpectedRowVersion" />
+                    <input type="hidden" asp-for="DocumentNumber" />
+                    <input type="hidden" asp-for="VersionLabel" />
+                    <input type="hidden" asp-for="RequiresMasterFormatNumber" />
+                    <input type="hidden" asp-for="MasterFormatNumberLabel" />
+                    <input type="hidden" asp-for="CanUpload" />
+                    <input type="hidden" asp-for="CurrentFileName" />
+                    <div class="form-group col-12">
+                        <label asp-for="Title" class="form-label"></label> <span style="color: red;">*</span>
+                        <input asp-for="Title" class="form-control" maxlength="512" required />
+                    </div>
+                    <div class="form-group col-md-6 col-12">
+                        <label asp-for="Keywords" class="form-label"></label>
+                        <input asp-for="Keywords" class="form-control" maxlength="1024" />
+                    </div>
+                    @if (Model.RequiresMasterFormatNumber)
+                    {
+                        <div class="form-group col-xl-3 mb-2">
+                            <label class="form-label" for="MasterFormatNumber">@(Model.MasterFormatNumberLabel ?? "Master Format Number")</label>
+                            <input asp-for="MasterFormatNumber" class="form-control" maxlength="96" />
+                        </div>
+                    }
+                    <div class="form-group col-xl-3 mb-2">
+                        <label asp-for="ChangeControlNumber" class="form-label"></label>
+                        @await Html.PartialAsync("_ChangeControlPicker", Model.ChangeControlNumber)
+                    </div>
+                    <div class="form-group col-12">
+                        <label asp-for="Summary" class="form-label"></label>
+                        <textarea asp-for="Summary" class="form-control" rows="2"></textarea>
+                    </div>
+                    <div class="form-group col-12">
+                        <label asp-for="ChangeSummary" class="form-label"></label>
+                        <textarea asp-for="ChangeSummary" class="form-control" rows="2"></textarea>
+                    </div>
+                    @if (Model.CanUpload)
+                    {
+                        <div class="form-group col-md-6 col-12">
+                            <label class="form-label" for="newSourceFile">Replace the document file</label>
+                            <input type="file" id="newSourceFile" name="newSourceFile" class="form-control" accept=".pdf,.docx,.xlsx,.pptx" />
+                            <small class="text-muted">Current: @(Model.CurrentFileName ?? "none")</small>
+                        </div>
+                    }
+                    <div class="form-group">
+                        <div class="text-end">
+                            <a asp-action="Details" asp-route-id="@Model.DocumentId" class="btn btn-primary ms-2">Back</a>
+                            <button type="submit" class="btn btn-success">Save</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+

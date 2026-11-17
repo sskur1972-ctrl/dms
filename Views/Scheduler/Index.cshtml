@@ -1,0 +1,90 @@
+@using DMS.Model.Documents
+@model List<SchedulerRunRow>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["PageTitle"] = "Scheduler";
+    ViewData["Section"] = "Administration";
+    var s = ViewBag.summary as EmailQueueSummary ?? new EmailQueueSummary();
+    bool enabled = ViewBag.enabled == true, emailEnabled = ViewBag.emailEnabled == true;
+    var lastPass = ViewBag.lastPass as DateTime?;
+    string Badge(string? st) => st switch { "OK" => "bg-success", "FAILED" => "bg-danger", _ => "bg-warning text-dark" };
+    var jobs = new[] {
+        ("SLA_SWEEP", "SLA reminders", "Warns before a stage is due, flags a breach and tells the assignee, escalates to QA after workflow.sla.escalationDays."),
+        ("MAKE_EFFECTIVE", "Automatic effective date", "Makes a published document effective on its effective date (in the name of its publisher)."),
+        ("PERIODIC_REVIEW", "Periodic review notices", "Tells the owner periodicReview.noticeDays before a periodic review is due."),
+        ("EMAIL", "E-mail", "Sends queued notification e-mails over SMTP (notification.smtp.*)."),
+        ("BACKUP", "Scheduled backup", "Runs the backup (backup.schedule.type) when backup.schedule.cron (local time) is due. Run checks the schedule; a backup on demand is on Administration > Backups."),
+    };
+}
+<partial name="_AdminPageTitle" />
+
+<div class="row">
+    <div class="col-xl-7">
+        <div class="card">
+            <div class="card-header d-flex align-items-center">
+                <h5 class="card-title mb-0 flex-grow-1">Jobs</h5>
+                <form asp-action="RunNow" method="post"><button class="btn btn-sm btn-soft-primary" type="submit">Run all now</button></form>
+            </div>
+            <div class="card-body">
+                <div class="alert @(enabled ? "alert-success" : "alert-warning") small">
+                    @if (enabled) { <text>The scheduler runs every <strong>@ViewBag.interval</strong> minute(s) inside the web application</text> }
+                    else { <text><strong>scheduler.enabled</strong> is false - nothing runs on its own</text> }
+                    @(lastPass == null ? "" : $" · last pass {lastPass:dd-MMM-yyyy HH:mm:ss} UTC").
+                    Settings: System Configuration, category <em>scheduler</em>.
+                </div>
+                <table class="table table-sm align-middle mb-0">
+                    <tbody>
+                        @foreach (var (code, name, text) in jobs)
+                        {
+                            <tr>
+                                <td><strong>@name</strong><div class="small text-muted">@text</div></td>
+                                <td class="text-end"><form asp-action="RunNow" method="post"><input type="hidden" name="job" value="@code" /><button class="btn btn-sm btn-light" type="submit">Run</button></form></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-5">
+        <div class="card">
+            <div class="card-header"><h5 class="card-title mb-0">E-mail queue</h5></div>
+            <div class="card-body">
+                <div class="alert @(emailEnabled && !string.IsNullOrEmpty(ViewBag.smtpHost as string) ? "alert-success" : "alert-secondary") small">
+                    @if (!emailEnabled) { <text>E-mail is switched off (<code>notification.email.enabled</code>). Notifications are shown in the application only; e-mails wait in the queue.</text> }
+                    else if (string.IsNullOrEmpty(ViewBag.smtpHost as string)) { <text>E-mail is on but <code>notification.smtp.host</code> is empty.</text> }
+                    else { <text>Sending through <strong>@ViewBag.smtpHost</strong>.</text> }
+                </div>
+                <div class="row text-center">
+                    <div class="col"><h4 class="mb-0">@s.pending</h4><small class="text-muted">waiting</small></div>
+                    <div class="col"><h4 class="mb-0 text-success">@s.sent</h4><small class="text-muted">sent</small></div>
+                    <div class="col"><h4 class="mb-0 text-danger">@s.failed</h4><small class="text-muted">failed (5 tries)</small></div>
+                    <div class="col"><h4 class="mb-0 text-muted">@s.skipped</h4><small class="text-muted">no address</small></div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-header"><h5 class="card-title mb-0">Recent runs</h5></div>
+    <div class="card-body">
+        <p class="small text-muted">A pass that found nothing to do is not recorded.</p>
+        <div class="table-responsive">
+            <table class="table table-sm table-bordered small mb-0">
+                <thead class="table-light"><tr><th>#</th><th>Job</th><th>Started (UTC)</th><th>Duration</th><th>Status</th><th>Items</th><th>Message</th></tr></thead>
+                <tbody>
+                    @if (Model.Count == 0) { <tr><td colspan="7" class="text-center text-muted">No runs recorded yet.</td></tr> }
+                    @foreach (var r in Model)
+                    {
+                        <tr>
+                            <td>@r.id</td><td>@r.job_code</td><td class="text-nowrap">@r.started_at.ToString("dd-MMM-yyyy HH:mm:ss")</td>
+                            <td>@(r.finished_at is DateTime f ? $"{(f - r.started_at).TotalSeconds:0.0} s" : "")</td>
+                            <td><span class="badge @Badge(r.status)">@r.status</span></td><td>@r.items</td><td>@r.message</td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

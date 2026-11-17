@@ -1,0 +1,53 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var title = ViewBag.AttachmentTitle as string ?? "Attachment";
+    var fileName = ViewBag.AttachmentFileName as string ?? "";
+    var contentUrl = ViewBag.AttachmentContentUrl as string ?? "";
+    var kind = ViewBag.AttachmentKind as string ?? "unavailable";
+    var html = ViewBag.AttachmentHtml as string;
+    ViewData["PageTitle"] = title;
+}
+<link rel="stylesheet" href="~/css/restricted-viewer.css" asp-append-version="true" />
+<link rel="stylesheet" href="~/css/editor-workspace.css" asp-append-version="true" />
+<style>
+    .dms-attachment-view { position:relative; min-height:calc(100dvh - 190px); overflow:auto; background:#e9edf3; }
+    .dms-attachment-view [data-restricted-pdf] { min-height:75vh; }
+    .dms-attachment-image { display:block; max-width:100%; max-height:calc(100dvh - 220px); margin:1rem auto; object-fit:contain; }
+    .dms-attachment-html { position:relative; max-width:1100px; margin:1rem auto; padding:2rem; background:white; }
+    @@media print { .dms-attachment-view { display:none !important; } }
+</style>
+<div class="card">
+    <div class="card-header d-flex align-items-center gap-2">
+        <strong class="flex-grow-1">@title</strong><span class="text-muted small">@fileName · Read-only</span>
+        <a class="btn btn-sm btn-outline-secondary" asp-action="Details" asp-route-id="@(Context.Request.Query["documentId"])">Back to document</a>
+    </div>
+    <div class="card-body p-0">
+        <div class="dms-attachment-view" oncontextmenu="return false">
+            @if (kind == "pdf")
+            {
+                <div data-restricted-pdf data-pdf-url="@contentUrl" aria-label="@title"></div>
+            }
+            else if (kind == "image")
+            {
+                <img class="dms-attachment-image" src="@contentUrl" alt="@title" draggable="false" />
+            }
+            else if (kind == "html" && html != null)
+            {
+                <div class="dms-attachment-html">@Html.Raw(html)</div>
+            }
+            else
+            {
+                <div class="alert alert-info m-3">This attachment format cannot be previewed in the read-only viewer.</div>
+            }
+            @if (ViewData["Watermark"] is string label && !string.IsNullOrWhiteSpace(label))
+            {
+                <div class="dms-single-watermark" aria-hidden="true"><span>@label</span></div>
+            }
+        </div>
+    </div>
+</div>
+@if (kind == "pdf")
+{
+    <script type="module" src="~/js/restricted-viewer.mjs" asp-append-version="true"></script>
+}
+<script src="~/js/reader-restrictions.js" asp-append-version="true"></script>

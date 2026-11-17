@@ -1,0 +1,123 @@
+﻿@using DMS.Model.Account
+@model Permissions
+
+<div class="row m-3">
+    <div class="col-xl-12">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title">Update Permissions</h4>
+            </div>
+            <div class="alert alert-warning py-2 mb-3" role="alert" style="font-size: 14px;">
+                ⚠ Fields marked <span style="color: red;">*</span> are required.
+            </div>
+                <div class="card-body">
+
+
+
+                      <form id="frmSubmit" onsubmit="return submitForm()" asp-controller="Permissions" asp-action="Edit" class="row g-3 needs-validation" novalidate>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="form-row row">
+                            <div class="form-group col-xl-6  mb-4">
+                                <input asp-for="pk_permission" hidden/>
+                                    <label asp-for="permission" class="form-label" autocomplete="off"></label> <span style="color: red;">*</span>
+                                <input asp-for="permission" required class="form-control" maxlength="45" placeholder="Enter Permission" />
+                                <span id="permission_error" class="text-danger"></span>
+
+                            </div>
+                                <div class="col-6">
+
+                                    <div class="mb-3">
+
+                                        <label asp-for="fk_Module_Id"></label><span style="color: red;">*</span>
+
+                                        @Html.DropDownListFor(model => model.fk_Module_Id, new SelectList(@ViewBag.module, "Module_Id", "Module_Name"), "Select Module Name", new { @class = "form-select ", @required = "true", @validate = "true" })
+
+                                    </div>
+
+                                </div>
+                        </div>
+
+                        <div class="form-group">
+                            <div class="text-end">
+                                <input type="button" class="btn btn-primary" onclick="location.href='@Url.Action("Index", "Permissions")'" value="Back To List" />
+
+                                <button type="submit" class="btn btn-success" id="save_btn">
+                                    + Save
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </form>
+
+                </div>
+       </div>
+    </div>
+</div>
+<script>
+
+
+    document.addEventListener("DOMContentLoaded", function () {
+
+                      $('#permission').change(function () {
+                       debugger;
+                             var Permission = $('#permission').val();
+                           $.ajax({
+                           type: 'post',
+                           url: "/Permissions/IsPermissionExisting",
+                           datatype: "json",
+                           data: { "Permission": Permission },
+                           success: function (data) {
+                                       debugger;
+                                   if (data== true) {
+                                           $('#permission').val("");  // Corrected this line
+                                       Swal.fire({
+                                           type: 'info',
+                                           title: 'Permission already exist',
+                                           confirmButtonColor: '#2fcc38',
+                                           confirmButtonText: 'OK',
+                                       });
+
+                                   }
+                               }
+                            });
+                        });
+
+         });
+
+    function submitForm() {
+
+          debugger
+          var fields = [
+             { id: "#permission", errorId: "#permission_error", message: "Please Provide Permission" }
+          ];
+
+          var allFilled = true;
+
+          fields.forEach(function (field) {
+              var value = $(field.id).val();
+              if (value == null || value == 0) {
+                  allFilled = false;
+                  $(field.errorId).text(field.message);
+
+              } else {
+                  $(field.errorId).text("");
+              }
+
+              $(field.id).on("input change", function () {
+                  if ($(this).val() != null && $(this).val() != 0) {
+                      $(field.errorId).text("");
+                  }
+              });
+          });
+
+
+          if (allFilled) {
+
+              document.getElementById("frmSubmit").submit();
+          }
+          return false;
+       }
+
+</script>

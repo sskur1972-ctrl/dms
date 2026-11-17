@@ -1,0 +1,285 @@
+@using DMS.Model.Documents
+@model DocumentDetailsViewModel
+@*
+    Phase 3b - the workflow actions the signed-in user may take now (sp_workflow_available_actions), and the
+    approval gates said out loud before anybody types a signature password (ported from Bcl.Dms Details.cshtml).
+    The database refuses anything this panel gets wrong - it is a courtesy, not the gate.
+*@
+@{
+    var d = Model.Document;
+    var v = Model.CurrentVersion;
+    var currentCycle = Model.Stages.Where(s => s.is_current_cycle).ToList();
+    var myStage = currentCycle.FirstOrDefault(s => s.status == "IN_PROGRESS"
+                     && Model.Actions.Any(a => a.workflow_instance_id == s.id));
+    var running = currentCycle.Where(s => s.status == "IN_PROGRESS").ToList();
+
+    var gatesReview = Model.Actions.Any(a => a.requires_review_complete);
+    var gatesComments = Model.Actions.Any(a => a.requires_comments_resolved);
+    var gatesOwnComment = Model.Actions.Any(a => a.requires_own_comment);
+    var iHaveCommented = Model.Comments.Any(c => c.is_current_version && c.created_by == Model.CurrentUserId);
+    var openFindings = Model.Comments.Count(c => c.is_current_version && c.IsOpenFinding);
+    var openReviews = currentCycle.Where(s => s.IsOpen && string.Equals(s.stage_kind, "REVIEW", StringComparison.OrdinalIgnoreCase)
+                                             && (myStage == null || s.id != myStage.id)).ToList();
+}
+
+<div class="card border-primary" id="dms-workflow">
+    <div class="card-header bg-primary-subtle">
+        <h5 class="card-title mb-0">Workflow</h5>
+        @if (running.Count > 0)
+        {
+            <small class="text-muted">
+                @foreach (var s in running)
+                {
+                    <span class="d-block">
+                        Now with <strong>@(s.assigned_user_name ?? ("any " + s.assigned_role_name))</strong>
+                        · @(s.stage_name ?? s.stage_code)
+                        @if (s.due_at != null) { <text>· due @s.due_at.Value.ToString("dd-MMM-yyyy")</text> }
+                        @if (s.sla_breached) { <span class="badge bg-danger ms-1">SLA breached</span> }
+                    </span>
+                }
+            </small>
+        }
+        else if (d.state_is_editable)
+        {
+            <small class="text-muted">With the author (@d.owner_name) - @d.state_name.</small>
+        }
+    </div>
+    <div class="card-body">
+        @if (Model.Actions.Count == 0)
+        {
+            <p class="text-muted small mb-0">
+                There is nothing for you to do on this document now. You can read it and everything recorded against it.
+            </p>
+        }
+        else
+        {
+            @if ((gatesOwnComment && !iHaveCommented) || (gatesReview && openReviews.Count > 0) || (gatesComments && openFindings > 0))
+            {
+                <div class="alert alert-warning small py-2">
+                    <strong>Before this document can move on:</strong>
+                    <ul class="mb-0 ps-3">
+                        @if (gatesOwnComment && !iHaveCommented)
+                        {
+                            <li>
+                                <strong>You have not recorded a comment on this revision.</strong> A review has to say what it found:
+                                <a asp-action="Editor" asp-route-versionId="@v?.id" asp-route-mode="Review">Open document review</a>.
+                            </li>
+                        }
+                        @if (gatesReview && openReviews.Count > 0)
+                        {
+                            <li>@(openReviews.Count == 1 ? "1 review is" : $"{openReviews.Count} reviews are") still outstanding:
+                                @string.Join(", ", openReviews.Select(s => s.assigned_user_name ?? s.stage_name ?? s.stage_code)).</li>
+                        }
+                        @if (gatesComments && openFindings > 0)
+                        {
+                            <li>@(openFindings == 1 ? "1 review finding is" : $"{openFindings} review findings are") still unanswered.
+                                Findings are answered by the author while the document is back with them - use <strong>Send Back to Author</strong>.</li>
+                        }
+                    </ul>
+                </div>
+            }
+
+            <div class="d-grid gap-2">
+                @foreach (var a in Model.Actions.GroupBy(a => a.action_code, StringComparer.OrdinalIgnoreCase).Select(g => g.First()))
+                {
+                    @* a revision and obsolescence have their own forms (change control / reason code) *@
+                    if (a.action_code == "INITIATE_REVISION")
+                    {
+                        <a class="btn btn-primary" asp-action="Revise" asp-route-id="@d.id"><i class="ri-git-branch-line me-1"></i> @a.action_label</a>
+                        continue;
+                    }
+                    if (a.action_code == "OBSOLETE")
+                    {
+                        <a class="btn btn-outline-danger" asp-action="Obsolete" asp-route-id="@d.id">@a.action_label <i class="ri-quill-pen-line ms-1"></i></a>
+                        continue;
+                    }
+                    <button type="button" class="btn @a.ButtonCss" data-bs-toggle="modal" data-bs-target="#dmsActionModal"
+                            data-dms-action="@a.action_code"
+                            data-dms-label="@a.action_label"
+                            data-dms-to="@a.to_state_name"
+                            data-dms-sign="@a.requires_signature.ToString().ToLowerInvariant()"
+                            data-dms-meaning="@a.signature_meaning"
+                            data-dms-comment="@a.requires_comment.ToString().ToLowerInvariant()"
+                            data-dms-reason="@a.requires_reason.ToString().ToLowerInvariant()"
+                            data-dms-cc="@a.requires_change_control.ToString().ToLowerInvariant()"
+                            data-dms-effective="@a.takes_effective_date.ToString().ToLowerInvariant()"
+                            data-dms-rejection="@a.is_rejection.ToString().ToLowerInvariant()"
+                            data-dms-override="@a.is_controller_override.ToString().ToLowerInvariant()"
+                            data-dms-stage="@(a.workflow_instance_id?.ToString() ?? "")">
+                        @a.action_label
+                        @if (a.requires_signature) { <i class="ri-quill-pen-line ms-1" title="Requires your electronic signature"></i> }
+                    </button>
+                }
+            </div>
+        }
+    </div>
+</div>
+
+@* ---------------------------------------------------------------- the action modal (one form for every action) *@
+@if (Model.Actions.Count > 0)
+{
+    <div class="modal fade" id="dmsActionModal" tabindex="-1" aria-hidden="true">
+        <div class="modal-dialog modal-lg modal-dialog-centered">
+            <form asp-action="Action" method="post" class="modal-content" autocomplete="off" id="dmsActionForm">
+                <input type="hidden" name="DocumentId" value="@d.id" />
+                <input type="hidden" name="DocumentVersionId" value="@(v?.id)" />
+                <input type="hidden" name="ExpectedRowVersion" value="@d.row_version" />
+                <input type="hidden" name="ActionCode" value="" />
+                <input type="hidden" name="WorkflowInstanceId" value="" />
+                <input type="hidden" name="SignatureMeaning" value="" />
+
+                <div class="modal-header">
+                    <h5 class="modal-title" data-dms-title>Confirm action</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p class="mb-3">@d.document_number rev @(v?.display_revision) will move to <strong data-dms-target></strong>.</p>
+                    <div class="alert alert-danger small py-2" data-dms-block="rejection" hidden>
+                        The document goes back to its author, and any other stage open on this revision is cancelled.
+                        Record what must be corrected.
+                    </div>
+                    <div class="alert alert-warning small py-2" data-dms-block="override" hidden>
+                        <strong>QA override.</strong> This bypasses the configured route. The reason is mandatory and is recorded
+                        in the audit trail with your signature.
+                    </div>
+
+                    <div class="mb-3" data-dms-block="comment">
+                        <label class="form-label" for="wfComments">Comments <span class="text-danger" data-dms-req hidden>*</span></label>
+                        <textarea class="form-control" id="wfComments" name="Comments" rows="3" maxlength="8000"></textarea>
+                    </div>
+
+                    <div class="mb-3" data-dms-block="reason">
+                        <label class="form-label" for="wfReason"><span data-dms-reason-label>Reason</span> <span class="text-danger" data-dms-req hidden>*</span></label>
+                        <input class="form-control" id="wfReason" name="Reason" maxlength="1024" list="dms-reasons-change" />
+                        <datalist id="dms-reasons-change">@foreach (var r in Model.ChangeReasons) { <option value="@r"></option> }</datalist>
+                        <datalist id="dms-reasons-review">@foreach (var r in Model.ReviewRejectionReasons) { <option value="@r"></option> }</datalist>
+                        <datalist id="dms-reasons-approval">@foreach (var r in Model.ApprovalRejectionReasons) { <option value="@r"></option> }</datalist>
+                        <div class="form-text">Pick from the list or type your own.</div>
+                    </div>
+
+                    <div class="mb-3" data-dms-block="cc" hidden>
+                        <label class="form-label" for="wfCc">Change control number <span class="text-danger">*</span></label>
+                <input class="form-control" id="wfCc" name="ChangeControlNumber" maxlength="64" value="@(v?.change_control_number)" readonly aria-readonly="true" />
+                        <div class="form-text">
+                            @if (v?.change_control_number != null)
+                            {
+                                <text>This revision already carries @v.change_control_number (@v.change_control_status?.ToLowerInvariant()).</text>
+                            }
+                            else
+                            {
+                                <text>Select an imported QAMS reference on the document before submitting it.</text>
+                            }
+                        </div>
+                    </div>
+
+                    <div class="row g-2">
+                        <div class="col-md-6 mb-3" data-dms-block="effective" hidden>
+                            <label class="form-label" for="wfEffective">Effective from</label>
+                            <input class="form-control" id="wfEffective" name="EffectiveFrom" type="date" />
+                            <div class="form-text">Blank = the configured default (workflow.effectiveDate.defaultLagDays). Not in the past.</div>
+                        </div>
+                        <div class="col-md-6 mb-3" data-dms-block="assignee">
+                            <label class="form-label" for="wfNext">Assign the next stage to (optional)</label>
+                            <select class="form-select" id="wfNext" name="NextAssigneeUserId">
+                                <option value="">The configured assignee</option>
+                                @foreach (var u in Model.AssigneePool)
+                                {
+                                    <option value="@u.user_id">@u.full_name (@u.user_name) - @u.role_names</option>
+                                }
+                            </select>
+                            <div class="form-text">Used only for a next stage that goes to a role pool.</div>
+                        </div>
+                    </div>
+
+                    <fieldset class="border rounded p-3" data-dms-block="sign" hidden disabled>
+                        <legend class="float-none w-auto px-2 fs-6 mb-0">Electronic signature</legend>
+                        <p class="small text-muted mb-2">
+                            You are signing with the meaning <strong data-dms-meaning></strong>.
+                            Re-enter your own credentials - being signed in is not the same as signing.
+                        </p>
+                        <div class="row g-2">
+                            <div class="col-md-6">
+                                <label class="form-label" for="wfUser">User ID</label>
+                                <input class="form-control" id="wfUser" name="SignatureUserName" value="@Model.CurrentUserName" autocomplete="off" />
+                            </div>
+                            <div class="col-md-6">
+                                <label class="form-label" for="wfPassword">Password</label>
+                                <input class="form-control" id="wfPassword" name="SignaturePassword" type="password" autocomplete="current-password" />
+                            </div>
+                        </div>
+                        <div class="form-check mt-2">
+                            <input class="form-check-input" type="checkbox" id="wfAck" name="MeaningAcknowledged" value="true" />
+                            <label class="form-check-label small" for="wfAck">
+                                I confirm that I am applying my electronic signature with the meaning shown above, and that it is the
+                                legally binding equivalent of my handwritten signature.
+                            </label>
+                        </div>
+                    </fieldset>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-primary" data-dms-submit>Confirm</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        (function () {
+            var modal = document.getElementById('dmsActionModal');
+            var form = document.getElementById('dmsActionForm');
+            if (!modal || !form) return;
+            function block(name) { return form.querySelector('[data-dms-block="' + name + '"]'); }
+            function show(name, on) { var el = block(name); if (el) el.hidden = !on; return el; }
+            function require(name, on) {
+                var el = block(name); if (!el) return;
+                var input = el.querySelector('input:not([type=hidden]),textarea,select');
+                if (input) input.required = !!on;
+                el.querySelectorAll('[data-dms-req]').forEach(function (m) { m.hidden = !on; });
+            }
+            modal.addEventListener('show.bs.modal', function (ev) {
+                var b = ev.relatedTarget; if (!b) return;
+                var yes = function (k) { return b.getAttribute('data-dms-' + k) === 'true'; };
+                var action = b.getAttribute('data-dms-action');
+                form.elements['ActionCode'].value = action;
+                form.elements['WorkflowInstanceId'].value = b.getAttribute('data-dms-stage') || '';
+                form.elements['SignatureMeaning'].value = b.getAttribute('data-dms-meaning') || '';
+                form.querySelector('[data-dms-title]').textContent = b.getAttribute('data-dms-label');
+                form.querySelector('[data-dms-target]').textContent = b.getAttribute('data-dms-to');
+                form.querySelector('[data-dms-meaning]').textContent = b.getAttribute('data-dms-meaning');
+                form.querySelector('[data-dms-submit]').textContent = yes('sign') ? 'Sign and confirm' : 'Confirm';
+                form.querySelector('[data-dms-submit]').className = 'btn ' + (yes('rejection') ? 'btn-danger' : 'btn-primary');
+
+                show('rejection', yes('rejection'));
+                show('override', yes('override'));
+                require('comment', yes('comment'));
+                show('reason', true); require('reason', yes('reason'));
+                var reason = form.elements['Reason'];
+                reason.setAttribute('list', action === 'REVIEW_REJECT' ? 'dms-reasons-review'
+                    : action === 'APPROVAL_REJECT' ? 'dms-reasons-approval' : 'dms-reasons-change');
+                form.querySelector('[data-dms-reason-label]').textContent = yes('rejection') ? 'Reason for rejection' : 'Reason';
+                show('cc', yes('cc')); require('cc', yes('cc'));
+                show('effective', yes('effective'));
+                if (!yes('effective')) form.elements['EffectiveFrom'].value = '';
+                show('assignee', !yes('rejection'));
+                if (yes('rejection')) form.elements['NextAssigneeUserId'].value = '';
+
+                // the signature block posts nothing unless the action needs it (fails closed: the server refuses)
+                var sign = block('sign');
+                sign.hidden = !yes('sign'); sign.disabled = !yes('sign');
+                form.elements['SignaturePassword'].value = '';
+                form.elements['SignaturePassword'].required = yes('sign');
+                form.elements['SignatureUserName'].required = yes('sign');
+                form.elements['MeaningAcknowledged'].checked = false;
+                form.elements['MeaningAcknowledged'].required = yes('sign');
+            });
+            modal.addEventListener('shown.bs.modal', function () {
+                var first = form.querySelector('[data-dms-block]:not([hidden]) textarea, [data-dms-block="sign"]:not([hidden]) input[type=password]');
+                if (first) first.focus();
+            });
+            form.addEventListener('submit', function () {
+                var btn = form.querySelector('[data-dms-submit]'); btn.disabled = true; btn.textContent = 'Working…';
+            });
+        })();
+    </script>
+}

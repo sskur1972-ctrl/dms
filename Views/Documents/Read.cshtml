@@ -1,0 +1,74 @@
+@using DMS.Model.Documents
+@model DocumentVersion
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var d = (DocumentDetail)ViewBag.document;
+    var access = (DocumentAccess)ViewBag.access;
+    ViewData["PageTitle"] = $"{d.document_number} rev {Model.display_revision}";
+    ViewData["Section"] = "Documents";
+    string? html = ViewBag.html as string;
+    string? problem = ViewBag.problem as string;
+    bool isPdf = ViewBag.isPdf == true;
+    string watermark = ViewBag.watermark as string ?? "";
+    string? renditionUrl = ViewBag.renditionUrl as string;
+    var rendition = ViewBag.rendition as RenditionStatus;
+}
+<partial name="_AdminPageTitle" />
+<link rel="stylesheet" href="~/css/restricted-viewer.css" asp-append-version="true" />
+<style>
+    .dms-reader { position: relative; background: #fff; border: 1px solid #dee2e6; min-height: 70vh; overflow: hidden; }
+    .dms-reader .dms-page { padding: 32px 48px; max-width: 980px; margin: 0 auto; color: #212529; }
+    .dms-reader iframe { width: 100%; height: 80vh; border: 0; display: block; }
+    .dms-watermark { position:absolute; inset:0; pointer-events:none; z-index:5; display:flex; align-items:center; justify-content:center; opacity:.14; font-size:clamp(54px,8vw,110px); font-weight:700; color:#555; }
+    .dms-watermark span { transform:rotate(-35deg); white-space:nowrap; }
+    @@media print { .dms-reader { display: none !important; } }
+</style>
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex align-items-center flex-wrap gap-2">
+                <div class="flex-grow-1">
+                    <h5 class="card-title mb-0">@d.title</h5>
+                    <small class="text-muted">@Model.source_file_name · SHA-256 <span class="font-monospace">@Model.source_sha256</span></small>
+                </div>
+                <span class="badge @(string.IsNullOrEmpty(Model.badge_css_class) ? "bg-secondary" : Model.badge_css_class)">@Model.state_name</span>
+                @if (renditionUrl != null)
+                {
+                    <a class="btn btn-soft-secondary btn-sm" asp-action="Read" asp-route-id="@d.id" asp-route-versionId="@Model.id" asp-route-view="text">Show as text</a>
+                }
+                else if (rendition?.rendered_pdf_path != null)
+                {
+                    <a class="btn btn-soft-primary btn-sm" asp-action="Read" asp-route-id="@d.id" asp-route-versionId="@Model.id" asp-route-view="pdf">Controlled copy (PDF)</a>
+                }
+                <a class="btn btn-light btn-sm" asp-action="Details" asp-route-id="@d.id">Back to document</a>
+            </div>
+            <div class="card-body">
+                <div class="dms-reader" oncontextmenu="@(access.allow_screen_capture ? null : "return false;")">
+                    @if (access.apply_screen_watermark && renditionUrl == null && !string.IsNullOrWhiteSpace(watermark))
+                    {
+                        <div class="dms-watermark"><span>@watermark</span></div>
+                    }
+                    @if (renditionUrl != null)
+                    {
+                        <div data-restricted-pdf data-pdf-url="@renditionUrl" aria-label="@d.document_number controlled copy"></div>
+                    }
+                    else if (problem != null)
+                    {
+                        <div class="dms-page"><div class="alert alert-info mb-0">@problem</div></div>
+                    }
+                    else if (isPdf)
+                    {
+                        <div data-restricted-pdf data-pdf-url="@Url.Action("Pdf", new { id = d.id, versionId = Model.id })" aria-label="@d.document_number"></div>
+                    }
+                    else
+                    {
+                        <div class="dms-page">@Html.Raw(html)</div>
+                    }
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+<script type="module" src="~/js/restricted-viewer.mjs" asp-append-version="true"></script>
+<script src="~/js/reader-restrictions.js" asp-append-version="true"></script>

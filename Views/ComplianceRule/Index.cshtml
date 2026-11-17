@@ -1,0 +1,58 @@
+@using DMS.Model.Master
+@model List<ComplianceRule>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["PageTitle"] = "Advisory Review Rules";
+}
+<partial name="_DataTableCSS" />
+<partial name="_AdminPageTitle" />
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-header border-0">
+                <p class="text-muted mb-0">Checks the compliance assistant runs on a draft before it is submitted. The assistant is <strong>advisory only</strong> - no rule can approve, block or change a document. Rules are seeded; you can change their wording, pattern, severity and activation.</p>
+            </div>
+            <div class="card-body">
+                <table id="assetlist" class="table nowrap dt-responsive align-middle table-hover table-bordered" style="width:100%">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Order</th>
+                            <th>Code</th>
+                            <th>Kind</th>
+                            <th>Title</th>
+                            <th>Applies To</th>
+                            <th>Severity</th>
+                            <th>Status</th>
+                            <th width="5%" class="not-export-col"></th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in Model)
+                        {
+                            var sev = r.severity switch { "HIGH" => "bg-danger", "MEDIUM" => "bg-warning", "LOW" => "bg-info", _ => "bg-secondary" };
+                            <tr>
+                                <td>@r.sort_order</td>
+                                <td><strong>@r.rule_code</strong></td>
+                                <td><small>@r.rule_kind</small></td>
+                                <td>@r.title</td>
+                                <td>@(string.IsNullOrEmpty(r.applies_to_type_code) ? "All" : r.applies_to_type_code)</td>
+                                <td><span class="badge @sev">@r.severity</span></td>
+                                <td>
+                                    @if (r.is_active) { <span class="badge bg-success-subtle text-success">Active</span> }
+                                    else { <span class="badge bg-danger-subtle text-danger">Inactive</span> }
+                                </td>
+                                <td><center><a class="btn btn-soft-secondary btn-sm" asp-action="Edit" asp-route-id="@r.id" title="Edit"><i class="ri-pencil-fill"></i></a></center></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<partial name="_AdminTableJS" />
+<script>
+    document.addEventListener('DOMContentLoaded', function () { initAdminTable('#assetlist', [0, 1, 2, 3, 4, 5, 6], [[0, 'asc']]); });
+</script>

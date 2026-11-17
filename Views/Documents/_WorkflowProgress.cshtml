@@ -1,0 +1,19 @@
+@using DMS.Model.Documents
+@model DocumentDetailsViewModel
+@{ var stages = Model.Stages.Where(s => s.is_current_cycle).OrderBy(s => s.stage_no).ToList(); }
+<div class="card">
+ <div class="card-header"><h5 class="card-title mb-0">Workflow progress <span class="badge bg-light text-dark">@Model.Document.state_name</span></h5></div>
+ <div class="card-body">
+  <ol class="list-unstyled d-flex flex-wrap gap-3 mb-0" aria-label="Current workflow progress">
+   <li class="border rounded p-2"><strong>Draft</strong><div class="small">@Model.Document.owner_name</div></li>
+   @foreach(var stage in stages){
+    <li class="border rounded p-2" aria-current="@(stage.status == "IN_PROGRESS" ? "step" : null)">
+     <strong>@(stage.stage_name ?? stage.stage_code)</strong>
+     <div class="small">@(stage.assigned_user_name ?? stage.assigned_role_name)</div>
+     <span class="badge @(stage.status == "COMPLETED" ? "bg-success" : stage.status == "IN_PROGRESS" ? "bg-primary" : stage.status == "REJECTED" ? "bg-danger" : "bg-secondary")">@stage.status?.Replace('_',' ')</span>
+    </li>
+   }
+   @if(Model.Document.state_is_effective){<li class="border rounded p-2"><strong>Effective</strong><div class="small">@Model.Document.effective_from?.ToString("dd-MMM-yyyy")</div></li>}
+  </ol>
+ </div>
+</div>

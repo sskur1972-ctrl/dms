@@ -1,0 +1,722 @@
+@using DMS.Model.Documents
+@model LegacyImportForm
+
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+
+    ViewData["PageTitle"] = "Legacy Master Import";
+    ViewData["Section"] = "Compliance";
+
+    var batches = (List<LegacyBatchRow>)ViewBag.batches;
+
+    string meaning = ViewBag.meaning as string ?? "Approved by";
+
+    string Badge(string? s) => s switch
+    {
+        "DONE" or "VALIDATED" => "bg-success",
+        "PARTIAL" => "bg-warning text-dark",
+        "RUNNING" => "bg-info",
+        _ => "bg-danger"
+    };
+}
+
+<partial name="_AdminPageTitle" />
+
+<div class="row">
+
+    <!-- ========================= -->
+    <!-- IMPORT FORM -->
+    <!-- ========================= -->
+
+    <div class="col-xl-7">
+
+        <div class="card">
+
+            <div class="card-header">
+
+                <div class="d-flex justify-content-between align-items-center">
+
+                    <h5 class="card-title mb-0">
+                        Import a batch
+                    </h5>
+
+                    <!-- SINGLE DOCUMENT IMPORT -->
+                    <a asp-action="SingleImport"
+                       class="btn btn-primary btn-sm">
+                        <i class="bi bi-file-earmark-plus me-1"></i>
+                        Single Legacy Document
+                    </a>
+
+                </div>
+
+            </div>
+
+            <div class="card-body">
+
+                <p class="small">
+
+                    Masters approved before the DMS
+                    (on paper or in the old system)
+                    enter as <strong>Effective</strong> documents
+                    with their existing number and revision.
+
+                    Each one receives your
+                    <strong>retrospective electronic signature</strong>
+                    ("@meaning"), marked as such on the signature page,
+                    with the justification below.
+
+                    Validate first - a validation writes nothing.
+
+                </p>
+
+
+                <ol class="small">
+
+                    <li>
+
+                        Download the
+                        <a asp-action="Template">
+                            manifest template
+                        </a>
+
+                        and fill one row per master
+                        (DocumentType and Department are codes,
+                        Owner is a user ID,
+                        dates yyyy-mm-dd,
+                        File is the path inside the zip).
+
+                    </li>
+
+                    <li>
+
+                        Put
+                        <code>manifest.csv</code>
+                        and the files in one
+                        <strong>.zip</strong>
+                        (at most @ViewBag.maxMb MB).
+
+                    </li>
+
+                    <li>
+
+                        Validate; correct the rows reported;
+                        then import with your signature.
+
+                    </li>
+
+                </ol>
+
+
+
+
+
+                <!-- ========================= -->
+                <!-- FORM -->
+                <!-- ========================= -->
+
+                <form asp-action="Run"
+                      method="post"
+                      enctype="multipart/form-data"
+                      autocomplete="off"
+                      id="dmsLegacy">
+
+                    @Html.AntiForgeryToken()
+
+
+                    <div class="row g-3">
+
+
+                        <!-- ========================= -->
+                        <!-- BATCH REFERENCE -->
+                        <!-- ========================= -->
+
+                        <div class="col-md-5">
+
+                            <label class="form-label"
+                                   asp-for="BatchReference">
+
+                                Batch reference
+
+                            </label>
+
+                            <input class="form-control"
+                                   asp-for="BatchReference"
+                                   required
+                                   minlength="3"
+                                   maxlength="64"
+                                   placeholder="e.g. LEGACY-QA-2026-01" />
+
+                            <span asp-validation-for="BatchReference"
+                                  class="text-danger small">
+                            </span>
+
+                        </div>
+
+
+
+
+
+
+
+
+
+
+                        <!-- ACCESS SCOPE -->
+                        <div class="col-md-5">
+                            <label asp-for="AccessScope" class="form-label">
+                                Access Scope <span class="text-danger">*</span>
+                            </label>
+
+                            <select asp-for="AccessScope" class="form-select" required>
+                                <option value="PLANT">Plant</option>
+                                <option value="GLOBAL">Global</option>
+                            </select>
+
+                            <span asp-validation-for="AccessScope"
+                                  class="text-danger small"></span>
+                        </div>
+
+
+
+
+
+                        <!-- ========================= -->
+                        <!-- ZIP PACKAGE -->
+                        <!-- ========================= -->
+
+                        <div class="col-md-7">
+
+                            <label class="form-label">
+
+                                Package (.zip)
+
+                            </label>
+
+                            <input class="form-control"
+                                   type="file"
+                                   name="package"
+                                   accept=".zip"
+                                   required />
+
+                            <div class="form-text">
+
+                                Maximum allowed size:
+                                @ViewBag.maxMb MB
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- ========================= -->
+                        <!-- JUSTIFICATION -->
+                        <!-- ========================= -->
+
+                        <div class="col-12">
+
+                            <label class="form-label"
+                                   asp-for="Justification">
+
+                                Justification for the retrospective signature
+
+                            </label>
+
+                            <textarea class="form-control"
+                                      asp-for="Justification"
+                                      rows="3"
+                                      required
+                                      minlength="20"
+                                      maxlength="1024"
+                                      placeholder="e.g. Carry-over of masters approved on paper under SOP-QA-001; originals verified against the archive (ref. CC-2026-014)."></textarea>
+
+                            <div class="form-text">
+                                Minimum 20 characters.
+                            </div>
+
+                            <span asp-validation-for="Justification"
+                                  class="text-danger small">
+                            </span>
+
+                        </div>
+
+
+                        <!-- ========================= -->
+                        <!-- DRY RUN / IMPORT -->
+                        <!-- ========================= -->
+
+                        <div class="col-12">
+
+                            <div class="form-check">
+
+                                <input class="form-check-input"
+                                       type="radio"
+                                       name="DryRun"
+                                       value="true"
+                                       id="dr1"
+                                       @(Model.DryRun ? "checked" : "") />
+
+                                <label class="form-check-label"
+                                       for="dr1">
+
+                                    <strong>
+                                        Validate only
+                                    </strong>
+
+                                    - nothing is imported
+
+                                </label>
+
+                            </div>
+
+
+                            <div class="form-check">
+
+                                <input class="form-check-input"
+                                       type="radio"
+                                       name="DryRun"
+                                       value="false"
+                                       id="dr0"
+                                       @(!Model.DryRun ? "checked" : "") />
+
+                                <label class="form-check-label"
+                                       for="dr0">
+
+                                    <strong>
+                                        Import
+                                    </strong>
+
+                                    the valid rows, with my signature
+
+                                </label>
+
+                            </div>
+
+                        </div>
+
+
+                        <!-- ========================= -->
+                        <!-- SIGNATURE -->
+                        <!-- ========================= -->
+
+                        <div class="col-12"
+                             id="dmsLegacySign"
+                             style="display:none">
+
+                            <fieldset class="border rounded p-3">
+
+                                <legend class="float-none w-auto px-2 fs-6 mb-0">
+
+                                    Retrospective electronic signature
+
+                                </legend>
+
+
+                                <p class="small mb-2">
+
+                                    Meaning:
+
+                                    <strong>
+                                        @meaning
+                                    </strong>
+
+                                    - applied to every master imported
+                                    in this batch.
+
+                                </p>
+
+
+                                <div class="row g-2">
+
+
+                                    <!-- USERNAME -->
+
+                                    <div class="col-md-6">
+
+                                        <input class="form-control"
+                                               name="SignatureUserName"
+                                               value="@ViewBag.userName"
+                                               placeholder="User ID" />
+
+                                    </div>
+
+
+                                    <!-- PASSWORD -->
+
+                                    <div class="col-md-6">
+
+                                        <input class="form-control"
+                                               name="SignaturePassword"
+                                               type="password"
+                                               autocomplete="new-password"
+                                               placeholder="Password" />
+
+                                    </div>
+
+                                </div>
+
+
+                                <!-- ACKNOWLEDGEMENT -->
+
+                                <div class="form-check mt-2">
+
+                                    <input class="form-check-input"
+                                           type="checkbox"
+                                           name="MeaningAcknowledged"
+                                           value="true"
+                                           id="dmsAck" />
+
+                                    <label class="form-check-label small"
+                                           for="dmsAck">
+
+                                        I confirm that I have verified these
+                                        masters against their approved originals,
+                                        and apply my electronic signature with
+                                        the meaning shown as the legally binding
+                                        equivalent of my handwritten signature.
+
+                                    </label>
+
+                                </div>
+
+                            </fieldset>
+
+                        </div>
+
+                    </div>
+
+
+                    <!-- ========================= -->
+                    <!-- SUBMIT -->
+                    <!-- ========================= -->
+
+                    <div class="mt-3">
+
+                        <button type="submit"
+                                class="btn btn-primary"
+                                id="dmsLegacyGo">
+
+                            Validate
+
+                        </button>
+
+                    </div>
+
+                </form>
+
+            </div>
+
+        </div>
+
+    </div>
+
+
+    <!-- ========================= -->
+    <!-- BATCHES -->
+    <!-- ========================= -->
+
+    <div class="col-xl-5">
+
+        <div class="card">
+
+            <div class="card-header">
+
+                <h5 class="card-title mb-0">
+                    Batches
+                </h5>
+
+            </div>
+
+
+            <div class="card-body p-0">
+
+                <table class="table table-sm mb-0 small align-middle">
+
+                    <thead class="table-light">
+
+                        <tr>
+
+                            <th class="ps-3">
+                                Batch
+                            </th>
+
+                            <th>
+                                Rows
+                            </th>
+
+                            <th>
+                                Status
+                            </th>
+
+                            <th>
+                                By / when (UTC)
+                            </th>
+
+                        </tr>
+
+                    </thead>
+
+
+                    <tbody>
+
+                        @if (batches.Count == 0)
+                        {
+                            <tr>
+
+                                <td colspan="4"
+                                    class="text-muted text-center py-3">
+
+                                    None yet.
+
+                                </td>
+
+                            </tr>
+                        }
+
+
+                        @foreach (var b in batches)
+                        {
+                            <tr>
+
+                                <td class="ps-3">
+
+                                    <a asp-action="Batch"
+                                       asp-route-id="@b.id">
+
+                                        @b.batch_reference
+
+                                    </a>
+
+
+                                    @if (b.dry_run)
+                                    {
+                                        <span class="badge bg-light text-dark border ms-1">
+
+                                            validation
+
+                                        </span>
+                                    }
+
+                            </td>
+
+
+                            <td>
+
+                                @(b.dry_run
+                                                                ? $"{b.total_rows - b.failed_rows}/{b.total_rows} valid"
+                                                                : $"{b.imported_rows}/{b.total_rows} imported")
+
+                            </td>
+
+
+                                <td>
+
+                                    <span class="badge @Badge(b.status)">
+
+                                        @b.status
+
+                                    </span>
+
+                                </td>
+
+
+                                <td class="text-nowrap">
+
+                                    @b.performed_by_name
+
+                                    <div class="text-muted">
+
+                                        @b.started_at.ToString("dd-MMM-yyyy HH:mm")
+
+                                    </div>
+
+                                </td>
+
+                            </tr>
+                                                }
+
+                    </tbody>
+
+                </table>
+
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+
+@section Scripts {
+
+    <script>
+
+        document.addEventListener("DOMContentLoaded", function () {
+
+
+            // ================================
+            // GET ELEMENTS
+            // ================================
+
+            const f =
+                document.getElementById("dmsLegacy");
+
+            const block =
+                document.getElementById("dmsLegacySign");
+
+            const go =
+                document.getElementById("dmsLegacyGo");
+
+
+            if (!f || !block || !go) {
+                return;
+            }
+
+
+            // ================================
+            // SIGNATURE FIELDS
+            // ================================
+
+            const signaturePassword =
+                f.querySelector(
+                    'input[name="SignaturePassword"]'
+                );
+
+
+            const meaningAcknowledged =
+                f.querySelector(
+                    'input[name="MeaningAcknowledged"]'
+                );
+
+
+            // ================================
+            // SYNC FORM
+            // ================================
+
+            function sync() {
+
+                const selected =
+                    f.querySelector(
+                        'input[name="DryRun"]:checked'
+                    );
+
+
+                if (!selected) {
+                    return;
+                }
+
+
+                const isImport =
+                    selected.value === "false";
+
+
+                // Show / hide signature section
+
+                block.style.display =
+                    isImport ? "" : "none";
+
+
+                // Signature password required
+                // only for Import
+
+                if (signaturePassword) {
+
+                    signaturePassword.required =
+                        isImport;
+
+                }
+
+
+                // Acknowledgement required
+                // only for Import
+
+                if (meaningAcknowledged) {
+
+                    meaningAcknowledged.required =
+                        isImport;
+
+                }
+
+
+                // Change button text
+
+                go.textContent =
+                    isImport
+                        ? "Import and sign"
+                        : "Validate";
+
+
+                // Change button color
+
+                go.className =
+                    isImport
+                        ? "btn btn-danger"
+                        : "btn btn-primary";
+
+            }
+
+
+            // ================================
+            // DRY RUN RADIO EVENTS
+            // ================================
+
+            f.querySelectorAll(
+                'input[name="DryRun"]'
+            ).forEach(function (radio) {
+
+                radio.addEventListener(
+                    "change",
+                    function () {
+
+                        sync();
+
+                    }
+                );
+
+            });
+
+
+            // ================================
+            // FORM SUBMIT
+            // ================================
+
+            f.addEventListener(
+                "submit",
+                function (event) {
+
+                    // Let the browser perform
+                    // native HTML validation.
+
+                    if (!f.checkValidity()) {
+
+                        return;
+
+                    }
+
+
+                    // Prevent double click
+
+                    go.disabled = true;
+
+
+                    go.textContent =
+                        "Working… (large packages take a while)";
+
+                    // IMPORTANT:
+                    // Do NOT call preventDefault().
+
+                }
+            );
+
+
+            // ================================
+            // INITIALIZE
+            // ================================
+
+            sync();
+
+        });
+
+    </script>
+
+}

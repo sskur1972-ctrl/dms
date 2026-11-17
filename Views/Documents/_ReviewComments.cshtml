@@ -1,0 +1,182 @@
+@using DMS.Model.Documents
+@model DocumentDetailsViewModel
+@*
+    Phase 3b - review comments (ported from Bcl.Dms _ReviewComments / ReviewCommentRules).
+    Reviewers raise findings on the revision in progress; the author answers each one (accepted / rejected /
+    deferred) while the document is back with him. "No comments" records that a review found nothing -
+    a review with no recorded comment leaves the signature as the only evidence that it happened.
+*@
+@{
+    var d = Model.Document;
+    var v = Model.CurrentVersion;
+    var current = Model.Comments.Where(c => c.is_current_version).ToList();
+    var earlier = Model.Comments.Where(c => !c.is_current_version).ToList();
+    var openCount = current.Count(c => c.IsOpenFinding);
+    string TypeBadge(string t) => t switch
+    {
+        "CORRECTION" => "bg-danger-subtle text-danger", "SUGGESTION" => "bg-info-subtle text-info",
+        "NO_FINDING" => "bg-success-subtle text-success", "AUTHOR_RESPONSE" => "bg-secondary-subtle text-secondary",
+        _ => "bg-warning-subtle text-warning"
+    };
+    string TypeName(string t) => t switch
+    {
+        "NO_FINDING" => "No comments", "AUTHOR_RESPONSE" => "Author", _ => t[..1] + t[1..].ToLowerInvariant()
+    };
+    string DispBadge(string x) => x switch
+    {
+        "OPEN" => "bg-warning", "ACCEPTED" => "bg-success", "REJECTED" => "bg-danger", "DEFERRED" => "bg-info", _ => "bg-light text-dark"
+    };
+}
+
+<div class="card" id="dms-comments">
+    <div class="card-header d-flex align-items-center">
+        <h5 class="card-title mb-0 flex-grow-1">@(ViewData["EditorWorkspace"] as bool? == true ? "Add record / Review" : "Review comments")</h5>
+        @if (openCount > 0) { <span class="badge bg-warning">@openCount open finding@(openCount == 1 ? "" : "s")</span> }
+    </div>
+    <div class="card-body">
+        <div class="dms-review-history">
+        @if (ViewData["EditorWorkspace"] as bool? == true) { <h6>Review comments</h6> }
+        @if (current.Count == 0)
+        {
+            <p class="text-muted small">No comments on this revision yet.</p>
+        }
+        else
+        {
+            <ul class="list-unstyled mb-3">
+                @foreach (var c in current)
+                {
+                    <li class="border rounded p-2 mb-2 @(c.parent_comment_id != null ? "ms-4" : "")" id="dms-comment-@c.id">
+                        <div class="d-flex flex-wrap align-items-center gap-2 small">
+                            <span class="badge @TypeBadge(c.comment_type)">@TypeName(c.comment_type)</span>
+                            <strong>@c.created_by_name</strong>
+                            <span class="text-muted">@c.created_at.ToString("dd-MMM-yyyy HH:mm")@(c.stage_code == null ? "" : " · " + c.stage_code)@(c.cycle_no > 1 ? " · cycle " + c.cycle_no : "")</span>
+                            @if (!string.IsNullOrEmpty(c.section_reference)) { <span class="text-muted">§ @c.section_reference</span> }
+                            @if (c.page_no != null) { <span class="text-muted">p. @c.page_no</span> }
+                            @if (c.disposition != "NOT_APPLICABLE") { <span class="badge @DispBadge(c.disposition) ms-auto">@c.disposition</span> }
+                        </div>
+                        <div class="mt-1" style="white-space: pre-wrap;">@c.comment_text</div>
+                        @if (ViewData["EditorWorkspace"] as bool? == true && (c.page_no != null || c.anchor_type != null || c.section_reference != null))
+                        {
+                            <button type="button" class="btn btn-sm btn-link dms-comment-location" data-comment-id="@c.id" data-page="@c.page_no" data-section="@c.section_reference" data-anchor-type="@c.anchor_type" data-anchor-value="@c.anchor_value" data-anchor-text="@c.anchor_text">Go to location</button>
+                        }
+                        @if (c.disposition is "ACCEPTED" or "REJECTED" or "DEFERRED")
+                        {
+                            <div class="small text-muted mt-1 border-start ps-2">
+                                @c.disposed_by_name, @c.disposed_at?.ToString("dd-MMM-yyyy HH:mm"): @(c.disposition_remarks ?? "(no remarks)")
+                            </div>
+                        }
+                        @if (c.IsOpenFinding && Model.CanDisposition)
+                        {
+                            <form asp-action="DisposeComment" method="post" class="row g-2 align-items-end mt-1">
+                                <input type="hidden" name="commentId" value="@c.id" />
+                                @if (ViewData["EditorReturnVersionId"] != null)
+                {
+                    <input type="hidden" name="editorVersionId" value="@ViewData["EditorReturnVersionId"]" />
+                    <input type="hidden" name="editorMode" value="@ViewData["EditorReturnMode"]" />
+                }
+                <input type="hidden" name="documentId" value="@d.id" />
+                                <div class="col-md-3">
+                                    <select name="disposition" class="form-select form-select-sm" required>
+                                        <option value="">Answer…</option>
+                                        <option value="ACCEPTED">Accepted</option>
+                                        <option value="REJECTED">Rejected</option>
+                                        <option value="DEFERRED">Deferred</option>
+                                    </select>
+                                </div>
+                                <div class="col-md-7"><input name="remarks" class="form-control form-control-sm" maxlength="2048" placeholder="What was done / why (mandatory for rejected or deferred)" /></div>
+                                <div class="col-md-2"><button class="btn btn-sm btn-soft-primary w-100" type="submit">Record</button></div>
+                            </form>
+                        }
+                    </li>
+                }
+            </ul>
+        }
+
+        </div>
+        @if (Model.Access.can_comment && v != null && v.id == d.current_version_id)
+        {
+            <form asp-action="AddComment" method="post" id="dms-add-comment" class="border-top pt-3">
+                @if (ViewData["EditorReturnVersionId"] != null)
+                {
+                    <input type="hidden" name="editorVersionId" value="@ViewData["EditorReturnVersionId"]" />
+                    <input type="hidden" name="editorMode" value="@ViewData["EditorReturnMode"]" />
+                }
+                <input type="hidden" name="documentId" value="@d.id" />
+                <input type="hidden" name="versionId" value="@v.id" />
+                <div class="row g-2">
+                    @if (!(Model.Access.is_owner && d.state_is_editable))
+                    {
+                        <div class="col-md-3">
+                            <label class="form-label small mb-1">Type</label>
+                            <select name="commentType" class="form-select form-select-sm">
+                                <option value="COMMENT">Comment</option>
+                                <option value="CORRECTION">Correction</option>
+                                <option value="SUGGESTION">Suggestion</option>
+                            </select>
+                        </div>
+                    }
+                    <div class="col-md-3">
+                        <label class="form-label small mb-1">Section</label>
+                        @if (ViewData["EditorWorkspace"] as bool? == true)
+                        {
+                            <select name="sectionReference" class="form-select form-select-sm dms-section-select" title="Section options are loaded from the selected page." disabled>
+                                <option value="">Select a page first</option>
+                            </select>
+                            <input name="sectionReferenceManual" class="form-control form-control-sm dms-section-manual" maxlength="128" placeholder="Enter section (e.g. 5.2 or Appendix A)" title="No section was found on this page. Enter a section reference." disabled hidden />
+                        }
+                        else
+                        {
+                            <input name="sectionReference" class="form-control form-control-sm" maxlength="128" placeholder="e.g. 5.2" title="Select a document passage to fill its section automatically." />
+                        }
+                    </div>
+                    <div class="col-md-2">
+                        <label class="form-label small mb-1">Page</label>
+                        <input name="pageNo" type="number" min="1" class="form-control form-control-sm" />
+                    </div>
+                    <div class="col-12">
+                        @if (ViewData["EditorWorkspace"] as bool? == true) {
+                            <input type="hidden" name="anchorType" />
+                            <input type="hidden" name="anchorValue" />
+                            <input type="hidden" name="anchorText" />
+                            <button type="button" class="btn btn-sm btn-link dms-capture-selection p-0 mb-1">Use document selection</button>
+                        }
+                        <textarea name="commentText" class="form-control" rows="3" maxlength="8000" required
+                                  placeholder="@(Model.Access.is_owner && d.state_is_editable ? "A note for the reviewers (how the findings were addressed)…" : "What you found - quote the section and say what must change…")"></textarea>
+                    </div>
+                    <div class="col-12 d-flex gap-2">
+                        <button type="submit" class="btn btn-sm btn-primary"><i class="ri-chat-new-line me-1"></i> Record comment</button>
+                    </div>
+                </div>
+            </form>
+            @if (!(Model.Access.is_owner && d.state_is_editable) && !current.Any(c => c.created_by == Model.CurrentUserId))
+            {
+                <form asp-action="AddComment" method="post" class="mt-2">
+                    @if (ViewData["EditorReturnVersionId"] != null)
+                {
+                    <input type="hidden" name="editorVersionId" value="@ViewData["EditorReturnVersionId"]" />
+                    <input type="hidden" name="editorMode" value="@ViewData["EditorReturnMode"]" />
+                }
+                <input type="hidden" name="documentId" value="@d.id" />
+                    <input type="hidden" name="versionId" value="@v.id" />
+                    <input type="hidden" name="commentType" value="NO_FINDING" />
+                    <input type="hidden" name="commentText" value="Reviewed. No comments on this revision." />
+                    <button type="submit" class="btn btn-sm btn-soft-success"><i class="ri-checkbox-circle-line me-1"></i> No comments</button>
+                    <small class="text-muted ms-2">Records "Reviewed. No comments on this revision." as your finding.</small>
+                </form>
+            }
+        }
+
+        @if (earlier.Count > 0)
+        {
+            <details class="mt-3">
+                <summary class="small text-muted">Comments on earlier revisions (@earlier.Count)</summary>
+                <ul class="list-unstyled small mt-2 mb-0">
+                    @foreach (var c in earlier)
+                    {
+                        <li class="mb-1"><span class="badge bg-light text-dark">rev @c.version_label</span> <strong>@c.created_by_name</strong>: @c.comment_text <span class="badge @DispBadge(c.disposition)">@c.disposition</span></li>
+                    }
+                </ul>
+            </details>
+        }
+    </div>
+</div>

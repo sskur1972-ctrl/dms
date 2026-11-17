@@ -1,0 +1,11 @@
+@model Dictionary<string,bool>
+@{ViewData["PageTitle"]="Document intelligence";Layout="~/Views/Shared/_Layout.cshtml";var status=(DMS.Web.Services.Intelligence.AiStatus)ViewBag.Status;
+var labels=new Dictionary<string,string>{{"ai.ocr.enabled","OCR digitization"},{"ai.search.semanticEnabled","Smart Search"},{"ai.autoIndex.enabled","Automatic indexing"},{"ai.complianceAssistant.enabled","GMP advisory rules"},{"ai.trends.enabled","Trend Analysis"},{"ai.review.modelEnabled","AI model review"}};}
+<partial name="_AdminPageTitle" />
+<div class="card"><div class="card-body">
+ <div class="d-flex gap-2 mb-3"><a class="btn btn-primary" asp-action="Search">Smart Search</a>@if(ViewBag.CanReport==true){<a class="btn btn-outline-primary" asp-controller="Reports" asp-action="Run" asp-route-id="TRENDS">Trend Analysis</a>}@if(ViewBag.CanConfigure==true){<a class="btn btn-light" asp-action="Settings">AI settings</a>}@if(ViewBag.CanReferences==true){<a class="btn btn-light" asp-action="References">Review references</a>}</div>
+ <p>Review provider: <strong>@status.Provider</strong> · Model: @(string.IsNullOrEmpty(status.Model)?"Not configured":status.Model) · RAG: @(status.RagEnabled?"Enabled":"Disabled") · @status.References active references.</p>
+ <table class="table"><thead><tr><th>Feature</th><th>Status</th></tr></thead><tbody>
+ @foreach(var item in Model){<tr><td>@labels.GetValueOrDefault(item.Key,item.Key)</td><td><span class="badge @(item.Value?"bg-success":"bg-secondary")">@(item.Value?"Enabled":"Disabled")</span></td></tr>}
+ </tbody></table><p>Open a document's Intelligence page to digitize its content, view suggested keywords, or run advisory review.</p>
+</div></div>

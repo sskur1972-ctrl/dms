@@ -1,0 +1,45 @@
+@using DMS.Model.Documents
+@using DMS.Web.Services.Authoring
+@using DMS.Web.Services.Export
+@model AuditDetail
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["PageTitle"] = "Audit entry";
+    ViewData["Section"] = "Compliance";
+    var reportEntry = new AuditRow {id=Model.id,event_at_utc=Model.event_at_utc,time_zone_id=Model.time_zone_id,action=Model.action,before_json=Model.before_json,after_json=Model.after_json};
+    var lifecycle=AuditReportBuilder.IsLifecycle(reportEntry);
+    var changes = AuditReportBuilder.Changes(reportEntry);
+}
+<partial name="_AdminPageTitle" />
+<div class="card">
+    <div class="card-header d-flex align-items-center gap-2">
+        <h5 class="card-title mb-0 flex-grow-1">@UserAuditPresentation.Words(Model.action) · @Model.document_number</h5>
+        <a class="btn btn-sm btn-light" asp-action="Index" asp-route-DocumentId="@Model.document_id">Back to audit trail</a>
+    </div>
+    <div class="card-body">
+        <dl class="row small mb-0">
+            <dt class="col-sm-3">Audit reference</dt><dd class="col-sm-9">@AuditReportBuilder.Reference(reportEntry)</dd>
+            <dt class="col-sm-3">When (UTC)</dt><dd class="col-sm-9">@Model.event_at_utc.ToString("dd-MMM-yyyy HH:mm:ss.fff",System.Globalization.CultureInfo.InvariantCulture) UTC</dd>
+            <dt class="col-sm-3">When (local)</dt><dd class="col-sm-9">@AuditReportBuilder.LocalTime(reportEntry)</dd>
+            <dt class="col-sm-3">Who</dt><dd class="col-sm-9">@Model.actor_full_name (@Model.actor_user_name)</dd>
+            <dt class="col-sm-3">Detail</dt><dd class="col-sm-9">@(lifecycle?AuditReportBuilder.Description(reportEntry):UserAuditPresentation.Detail(Model.action,changes))</dd>
+            @if(string.Equals(Model.action,"STATE_CHANGE",StringComparison.OrdinalIgnoreCase)) {
+                <dt class="col-sm-3">Previous status</dt><dd class="col-sm-9">@UserAuditPresentation.Words(AuditReportBuilder.Property(Model.before_json,"State","state_code"))</dd>
+                <dt class="col-sm-3">New status</dt><dd class="col-sm-9">@UserAuditPresentation.Words(AuditReportBuilder.Property(Model.after_json,"State","state_code"))</dd>
+            }
+            @if (Model.document_id != null) {
+                <dt class="col-sm-3">Document</dt><dd class="col-sm-9"><a asp-controller="Documents" asp-action="Details" asp-route-id="@Model.document_id">@Model.document_number</a> · Revision @Model.version_no</dd>
+            }
+            <dt class="col-sm-3">Record</dt><dd class="col-sm-9">@UserAuditPresentation.RecordKey(Model.document_number,Model.entity_key)</dd>
+            <dt class="col-sm-3">User roles</dt><dd class="col-sm-9">@AuditReportBuilder.Roles(Model.actor_role_codes)</dd>
+            <dt class="col-sm-3">Reason</dt><dd class="col-sm-9">@UserAuditPresentation.Text(Model.reason)</dd>
+            @if(Model.signature_id != null) { <dt class="col-sm-3">Electronic signature</dt><dd class="col-sm-9">@UserAuditPresentation.Text(Model.signature_manifestation)</dd> }
+        </dl>
+    </div>
+</div>
+<div class="card"><div class="card-header"><h6 class="card-title mb-0">Recorded changes</h6></div><div class="card-body table-responsive">
+    <table class="table table-bordered align-top"><thead><tr><th>Field</th><th>Old Value</th><th>New Value</th></tr></thead><tbody>
+    @if(changes.Count==0) { <tr><td colspan="3">@(lifecycle?"This entry records a lifecycle action or electronic signature, rather than a document-field edit.":"Readable old and new values were not recorded for this event.")</td></tr> }
+    @foreach(var c in changes) { <tr><td>@c.Label</td><td style="white-space:pre-wrap;overflow-wrap:anywhere">@c.OldValue</td><td style="white-space:pre-wrap;overflow-wrap:anywhere">@c.NewValue</td></tr> }
+    </tbody></table>
+</div></div>

@@ -1,0 +1,80 @@
+@using DMS.Model.Documents
+@model PrintRequestForm
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var d = (DocumentDetail)ViewBag.document;
+    var users = (List<AssigneeOption>)ViewBag.users;
+    var open = (List<PrintRequestRow>)ViewBag.open;
+    int maxCopies = ViewBag.maxCopies is int m ? m : 20;
+    ViewData["PageTitle"] = "Request Controlled Print";
+    ViewData["Section"] = "Controlled Print";
+}
+<partial name="_AdminPageTitle" />
+
+<div class="row">
+    <div class="col-xl-8">
+        <div class="card">
+            <div class="card-header"><h5 class="card-title mb-0">@d.document_number rev @d.effective_version_no - @d.title</h5></div>
+            <div class="card-body">
+                <form asp-action="New" method="post" autocomplete="off">
+                    <input type="hidden" asp-for="DocumentId" />
+                    <div class="row g-3">
+                        <div class="col-md-4">
+                            <label class="form-label" asp-for="Copies">Number of copies</label>
+                            <input class="form-control" asp-for="Copies" type="number" min="1" max="1" readonly required />
+                        </div>
+                        <div class="col-md-8">
+                            <label class="form-label">Copy type</label>
+                            <div class="d-flex gap-3 pt-1">
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" asp-for="CopyType" value="CONTROLLED" id="ctC" />
+                                    <label class="form-check-label" for="ctC">Controlled - numbered, issued and retrieved</label>
+                                </div>
+                                <div class="form-check">
+                                    <input class="form-check-input" type="radio" asp-for="CopyType" value="UNCONTROLLED" id="ctU" />
+                                    <label class="form-check-label" for="ctU">Uncontrolled - for information only</label>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="col-12">
+                            <label class="form-label" asp-for="Purpose">Purpose / where the copies will be used</label>
+                            <textarea class="form-control" asp-for="Purpose" rows="2" required minlength="5" maxlength="512" placeholder="e.g. Granulation area, line 2 - replacement of the superseded copy"></textarea>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" asp-for="IssueToUserId">Issue to</label>
+                            <select class="form-select" asp-for="IssueToUserId">
+                                <option value="">Myself</option>
+                                @foreach (var u in users)
+                                {
+                                    <option value="@u.user_id">@u.full_name (@u.user_name)</option>
+                                }
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label" asp-for="ReturnDueOn">Return by (controlled copies)</label>
+                            <input class="form-control" asp-for="ReturnDueOn" type="date" min="@DateTime.Today.ToString("yyyy-MM-dd")" />
+                        </div>
+                    </div>
+                    <div class="mt-3 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary"><i class="ri-printer-line me-1"></i> Submit for QA authorisation</button>
+                        <a class="btn btn-light" asp-controller="Documents" asp-action="Details" asp-route-id="@d.id">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-4">
+        <div class="card">
+            <div class="card-header"><h6 class="card-title mb-0">Open requests for this document</h6></div>
+            <div class="card-body">
+                @if (open.Count == 0) { <p class="text-muted small mb-0">None.</p> }
+                <ul class="list-unstyled mb-0 small">
+                    @foreach (var r in open)
+                    {
+                        <li class="mb-1"><a asp-action="Details" asp-route-id="@r.id">@r.request_number</a> · @r.copies_requested cop@(r.copies_requested == 1 ? "y" : "ies") · <partial name="_PrintBadge" model="r.status" /> <span class="text-muted">@r.requested_by_name</span></li>
+                    }
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>

@@ -1,0 +1,94 @@
+﻿@using DMS.Model.Account;
+@model OTPAuth
+@{
+    Layout = null;
+    ViewBag.Title = "Login";
+}
+
+<!DOCTYPE html>
+<html lang="en" class="h-100">
+
+<head>
+    <!-- Title -->
+    <title>Leading with Excellence: Campaign Management | Grasim Opus</title>
+
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="author" content="Propix Technology Pvt Ltd">
+
+    <!-- MOBILE SPECIFIC -->
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="~/assets/js/jquery-3.6.0.min.js"></script>
+    <!-- Favicon icon -->
+    <link rel="icon" type="image/png" sizes="16x16" href="~/assets/images/icon.png">
+    <link href="~/assets/css/style.css" rel="stylesheet">
+    <script src="~/assets/js/jquery-3.6.0.min.js"></script>
+
+    <!-- CSS -->
+    <link href="~/assets/vendor/jqvmap/css/jqvmap.min.css" rel="stylesheet">
+    <link href="~/assets/vendor/chartist/css/chartist.min.css" rel="stylesheet">
+    <link href="~/assets/vendor/sweetalert2/dist/sweetalert2.min.css" rel="stylesheet">
+    <link href="~/assets/vendor/owl-carousel/owl.carousel.css" rel="stylesheet">
+    <link href="~/assets/css/style.css" rel="stylesheet">
+
+</head>
+
+<body class="h-100">
+    <div class="login-account">
+        <div class="row h-100">
+            <div class="col-lg-6 align-self-start">
+                <div class="account-info-area" style="background-image: url('@Url.Content("~/assets/images/rainbow.gif")');">
+                    <div class="login-content">
+                        <p class="sub-title">Log in to your admin dashboard with your credentials</p>
+                        <h1 class="title">The Evolution of <span>Birla Opus</span></h1>
+                        <p class="text">Innovating Management Solutions for a Better Tomorrow</p>
+                    </div>
+                </div>
+            </div>
+            <div class="col-lg-6 col-md-7 col-sm-12 mx-auto align-self-center">
+                <div class="login-form">
+                    <div class="login-head">
+
+                        <p>Empowering Success Through Smart Management</p>
+                    </div>
+                    <h6 class="login-title"><span>OTP Authentication</span></h6>
+
+                    <form method="post" asp-controller="Account" asp-action="Login" class="row g-3 needs-validation" novalidate>
+
+                        <div class="mb-1">
+                            <label asp-for="EmailId" class="form-label">Username</label>
+                            <input asp-for="pk_user" hidden/>
+                            <input asp-for="EmailId" readonly class="form-control bg-light" type="email" placeholder="Enter Username"  />
+                        </div>
+                        <div class="mb-1">
+                            <label asp-for="OTP" class="form-label">OTP</label>
+                            <input asp-for="OTP" required class="form-control" max="6" placeholder="Enter OTP" />
+                            <span asp-validation-for="OTP" class="text-danger"></span>
+                        </div>
+
+                        <div class="text-center mb-1">
+                            <button type="submit" class="btn btn-success btn-block">Submit</button>
+                        </div>
+                      
+                    </form>
+                </div>
+            </div>
+        </div>
+    </div>
+    <partial name="_Notification" />
+    <!-- Scripts -->
+
+    <script src="~/assets/vendor/global/global.min.js"></script>
+    <script src="~/assets/vendor/sweetalert2/dist/sweetalert2.min.js"></script>
+    <script src="~/assets/vendor/chart-js/chart.bundle.min.js"></script>
+    <script src="~/assets/vendor/peity/jquery.peity.min.js"></script>
+    <script src="~/assets/vendor/apexchart/apexchart.js"></script>
+    <script src="~/assets/js/dashboard/compaign.js"></script>
+    <script src="~/assets/js/custom.min.js"></script>
+    <script src="~/assets/js/deznav-init.js"></script>
+
+    
+</body>
+
+</html>
+

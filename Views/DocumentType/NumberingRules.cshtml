@@ -1,0 +1,82 @@
+@using DMS.Model.Master
+@model List<NumberingRule>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["PageTitle"] = "Numbering Rules";
+    var types = ViewBag.types as List<DocumentType> ?? new List<DocumentType>();
+    long? selectedType = ViewBag.documentTypeId as long?;
+}
+<partial name="_DataTableCSS" />
+<partial name="_AdminPageTitle" />
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-header border-0">
+                <div class="row g-3 align-items-center">
+                    <div class="col-sm-4">
+                        <form method="get" asp-action="NumberingRules">
+                            <select name="documentTypeId" class="form-select" onchange="this.form.submit()">
+                                <option value="">All document types</option>
+                                @foreach (var t in types)
+                                {
+                                    <option value="@t.id" selected="@(selectedType == t.id)">@t.code - @t.name</option>
+                                }
+                            </select>
+                        </form>
+                    </div>
+                    <div class="col-sm text-muted small">Tokens: {TYPE} {PREFIX} {DEPT} {SEQ} {YY} {YYYY}. The sequence restarts every year when "Reset yearly" is set.</div>
+                    <div class="col-sm-auto ms-auto">
+                        <div class="hstack gap-2">
+                            <a class="btn btn-primary" asp-action="Index">Document Types</a>
+                            <a class="btn btn-danger add-btn" asp-action="NumberingRuleEdit" asp-route-id="0" asp-route-documentTypeId="@selectedType"><i class="ri-add-line align-bottom me-1"></i> Add Rule</a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <table id="assetlist" class="table nowrap dt-responsive align-middle table-hover table-bordered" style="width:100%">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Document Type</th>
+                            <th>Department</th>
+                            <th>Mode</th>
+                            <th>Pattern</th>
+                            <th>Prefix</th>
+                            <th>Width</th>
+                            <th>Reset Yearly</th>
+                            <th>Last No.</th>
+                            <th>Status</th>
+                            <th width="5%" class="not-export-col">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var r in Model)
+                        {
+                            <tr>
+                                <td><strong>@r.document_type_code</strong></td>
+                                <td>@(string.IsNullOrEmpty(r.department_code) ? "All" : r.department_code)</td>
+                                <td>@r.mode</td>
+                                <td><code>@r.pattern</code></td>
+                                <td>@r.prefix</td>
+                                <td>@r.sequence_width</td>
+                                <td>@(r.reset_yearly ? "Yes" : "No")</td>
+                                <td>@r.last_value</td>
+                                <td>
+                                    @if (r.is_active) { <span class="badge bg-success-subtle text-success">Active</span> }
+                                    else { <span class="badge bg-danger-subtle text-danger">Inactive</span> }
+                                </td>
+                                <td><center><a class="btn btn-soft-secondary btn-sm" asp-action="NumberingRuleEdit" asp-route-id="@r.id" title="Edit"><i class="ri-pencil-fill"></i></a></center></td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<partial name="_AdminTableJS" />
+<script>
+    document.addEventListener('DOMContentLoaded', function () { initAdminTable('#assetlist', [0, 1, 2, 3, 4, 5, 6, 7, 8], [[0, 'asc']]); });
+</script>

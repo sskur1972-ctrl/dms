@@ -1,0 +1,278 @@
+﻿@model List<AuditTrailViewModel>
+
+<partial name="_DataTableCSS" />
+@using DMS.DataAccess.Data;
+@using DMS.Model;
+@using DMS.Model.Account
+@using DMS.Model.Common
+@{
+    string username = "";
+    string rolename = "";
+    string displayname = "";
+    List<UsersViewModel> Users = ViewBag.usersList;
+    List<Activityt> Activity = ViewBag.ActivityList;
+    List<Roles> roles = ViewBag.roleList;
+}
+<style>
+    .table td {
+        word-wrap: break-word; /* Ensures text breaks within the cell */
+        max-width: 0;
+        white-space: normal;
+    }
+
+    /* Adding a specific class for the Details column to handle overflow */
+    .table .details-cell {
+        max-width: 350px; /* Adjust this width as needed */
+        height: 25px; /* Limit the height to prevent the column from growing excessively */
+        overflow-y: auto; /* Enables vertical scrolling if content overflows */
+        overflow-x: hidden; /* Prevents horizontal overflow */
+        word-wrap: break-word;
+        white-space: normal;
+    }
+
+        /* Optional: Tooltip for showing the full content */
+        .table .details-cell:hover {
+            overflow: visible;
+            background-color: #f8f9fa;
+            cursor: pointer;
+        }
+
+    .table .combined-cell {
+        max-width: 500px; /* Adjust to fit your layout */
+        height: 25px; /* Control height of the combined cell */
+        overflow-y: auto; /* Vertical scrollbar if content overflows */
+        overflow-x: hidden; /* Prevent horizontal overflow */
+        word-wrap: break-word;
+        white-space: normal;
+    }
+
+        /* Optional: Tooltip on hover to display full content */
+        .table .combined-cell:hover {
+            background-color: #f8f9fa;
+            cursor: pointer;
+        }
+
+</style>
+@{
+    try
+    {
+        @if (User.Identity.IsAuthenticated)
+        {
+            var claimsCount = User.Claims.Count();
+
+            if (claimsCount > 0)
+            {
+                // Retrieve the custom claim value from the user's claims
+                username = User.Identity.Name;
+                displayname = User.Claims.FirstOrDefault(c => c.Type == "displayName")?.Value;
+                rolename = User.Claims.FirstOrDefault(c => c.Type == "Roles_Name")?.Value;
+            }
+        }
+
+    }
+    catch (Exception ex)
+    {
+        displayname = ex.Message;
+    }
+}
+<!-- start page title -->
+
+<div class="row">
+
+    <div class="col-12">
+
+        <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+
+            <h4 class="mb-sm-0">Manage Audit Trail</h4>
+
+
+
+            <div class="page-title-right">
+
+                <ol class="breadcrumb m-0">
+
+                    <li class="breadcrumb-item"><a asp-controller="Home" asp-action="Index">Dashboards</a></li>
+
+                    <li class="breadcrumb-item active">Audit Success Trail</li>
+
+                </ol>
+
+            </div>
+
+
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- end page title -->
+
+<div class="row">
+
+    <div class="col-lg-12">
+
+        <div class="card" id="leadsList">
+            <div class="card-body">
+                <div class="row">
+
+
+                    <form method="post" asp-controller="AuditTrail" asp-action="Index">
+                        <div class="row">
+                            <div class="col-2">
+                                <div class="mb-3">
+                                    <label>From:</label>&nbsp;
+                                    <input class="form-control flatpickr-input bg-light border-light active" required name="From_date" type="date" size="5" id="From_date" value="@ViewBag.fromdate" />
+
+                                </div>
+                            </div>
+                            <div class="col-2">
+                                <div class="mb-3">
+                                    <label>To:</label>&nbsp;
+                                    <input class="form-control flatpickr-input bg-light border-light active" required name="To_date" type="date" size="5" id="To_date" value="@ViewBag.toDate" />
+
+                                </div>
+                            </div>
+                       
+                            <div class="col-3">
+                                <div class="mb-4">
+                                    <label>Users:</label>&nbsp;
+
+
+                                    <select id="Id" name="Id" class="form-select select2" style="width: 100%;">
+
+                                        <option value="0">Select Users</option>
+                                        @foreach (var item in ViewBag.usersList)
+                                        {
+                                            <option value="@item.pk_user">@item.username</option>
+                                        }
+                                    </select>
+
+                                </div>
+                            </div>
+
+                           
+
+                            <div class="col-1">
+                                <div style="padding-top:25px">
+                                    <button type="submit" class="btn btn-primary btn-md" onclick="return checkSearch()"><i class="ri-search-line" size="50px"></i></button>
+
+                                </div>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+
+
+
+            <div class="card-body">
+                <form name="frmFilter" id="frmFilter">
+
+                    <table id="depotlist" class="table align-middle table-hover table-bordered" style="width:100%">
+                        <thead class="table-light">
+                            <tr class="text-center">
+                                <th width="1%">Sr.No</th>
+                                <th width="15%">Username</th>
+                                <th width="15%">User Role</th>
+                                <th width="25%">Action Performed</th>
+                                <th width="25%" class="combined-cell">Module/Activity</th>
+                                <th width="14%">Timestamp</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @{
+                                int counter = 0;
+                            }
+                            @foreach (var obj in Model.OrderByDescending(u => u.CreatedDate))
+                            {
+                                counter++;
+                                <tr class="text-center">
+                                    <td>@counter</td>
+                                    <td>@obj.UserName</td>
+                                    <td>@obj.role_name</td>
+                                    <td>@obj.Reason</td>
+                                    <td>@obj.Activity</td>
+                                    <td>@obj.CreatedDate</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </form>
+            </div>
+        </div>
+
+
+
+    </div>
+
+    <!--end col-->
+
+</div>
+
+<partial name="_DataTableJS" />
+<!-- JAVASCRIPT -->
+<script src="assets/libs/bootstrap/js/bootstrap.bundle.min.js"></script>
+<script src="assets/libs/simplebar/simplebar.min.js"></script>
+<script src="assets/libs/node-waves/waves.min.js"></script>
+<script src="assets/libs/feather-icons/feather.min.js"></script>
+<script src="assets/js/pages/plugins/lord-icon-2.1.0.js"></script>
+<script src="assets/js/plugins.js"></script><!-- Select2 CSS -->
+<link href="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/css/select2.min.css" rel="stylesheet" />
+
+<!-- jQuery (required by Select2) -->
+<script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+
+<!-- Select2 JS -->
+<script src="https://cdn.jsdelivr.net/npm/select2@4.1.0-rc.0/dist/js/select2.min.js"></script>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+<script>
+    $(function () {
+        $('#Id').select2({
+            placeholder: "Select Users",
+            allowClear: true
+        });
+    });
+</script>
+
+
+<script>
+ 
+    // document.addEventListener('DOMContentLoaded', function () {
+    //     let table = new DataTable('#depotlist', {
+    //         scrollX: false,
+    //         pagingType: 'full_numbers',
+    //         displayLength: 10
+    //     });
+    // });
+    document.addEventListener('DOMContentLoaded', function () {
+        let table = new DataTable('#depotlist', {
+            scrollX: false,
+            pagingType: 'full_numbers',
+            // displayLength: 20,
+            pageLength: 10,
+            order: [[0, 'asc']]
+
+        });
+    });
+
+
+
+
+    function checkSearch() {
+
+        var fromDate = document.getElementById('From_date').value;
+        var toDate = document.getElementById('To_date').value;
+
+        if (fromDate > toDate) {
+            Swal.fire('Please enter proper date')
+            return false;
+        }
+
+        return true;
+    }
+
+</script>
+

@@ -1,0 +1,58 @@
+@using DMS.Web.Services.DocumentEditor
+@model EditorWorkspaceViewModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["EditorWorkspace"] = true;
+    ViewData["PageTitle"] = $"{Model.Session.DocumentNumber} - Editor";
+    var s = Model.Session;
+    var origin = new Uri(s.LaunchUrl).GetLeftPart(UriPartial.Authority);
+    Context.Response.Headers["Content-Security-Policy"] = $"frame-src 'self' {origin}; form-action 'self' {origin}; frame-ancestors 'self'; base-uri 'self'";
+}
+<link rel="stylesheet" href="~/css/editor-workspace.css" asp-append-version="true" />
+<div class="dms-editor-toolbar">
+    <div><strong>@s.DocumentNumber</strong> · @s.Title <span class="badge bg-secondary">Revision @s.DisplayRevision</span></div>
+    <div class="d-flex flex-wrap gap-2 align-items-center">
+        <span id="dms-editor-status" role="status" class="small">Loading document…</span>
+        <button id="dms-editor-retry" type="button" class="btn btn-sm btn-outline-secondary" hidden>Retry loading</button>
+        <button id="dms-continue-editing" type="button" class="btn btn-sm btn-warning" hidden>Continue working</button>
+        @if(s.Mode != EditorMode.View){<button id="dms-toggle-comments" type="button" class="btn btn-sm btn-outline-secondary" aria-expanded="true" aria-controls="dms-editor-comments">Hide comments</button>}
+        @if(s.Mode == EditorMode.Edit && Model.CanEditDocument){@await Html.PartialAsync("_ReindexAction", s.VersionId)}
+        <a asp-action="Read" asp-route-id="@s.DocumentId" asp-route-versionId="@s.VersionId" asp-route-view="pdf" class="btn btn-sm btn-outline-secondary">Controlled copy</a>
+        <a asp-action="Details" asp-route-id="@s.DocumentId" class="btn btn-sm btn-outline-secondary">Back</a>
+    </div>
+</div>
+<form id="dms-editor-csrf" hidden>@Html.AntiForgeryToken()</form>
+<script id="editor-settings" type="application/json">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(s))</script>
+<script id="editor-location" type="application/json">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.InitialLocation))</script>
+<div id="dms-editor-shell" class="dms-editor-shell" data-provider="@s.Provider"
+     data-edit-url="@(Model.CanEditDocument ? Url.Action("Editor", new { versionId = s.VersionId, mode = EditorMode.Edit }) : null)"
+     data-section-url="@Url.Action("EditorSection", new { versionId = s.VersionId })"
+     data-section-options-url="@Url.Action("EditorSections", new { versionId = s.VersionId })"
+     data-comments-url="@Url.Action("EditorComments", new { versionId = s.VersionId, mode = s.Mode })"
+     data-location-url="@Url.Action("EditorLocation", new {versionId=s.VersionId})"
+     data-pdf-url="@Url.Action("RenditionPdf", new { id = s.DocumentId, versionId = s.VersionId })">
+    <section class="dms-editor-pane" aria-label="Document editor">
+        @if(s.Transport == "FORM_POST") {
+            <form id="dms-editor-launch" target="dms-editor-frame" action="@s.LaunchUrl" method="post" asp-antiforgery="false">
+                @foreach (var field in s.PostFields) { <input type="hidden" name="@field.Key" value="@field.Value" /> }
+            </form>
+            <iframe id="dms-editor-frame" name="dms-editor-frame" title="Document editor" referrerpolicy="no-referrer" allowfullscreen></iframe>
+        } else { <div id="dms-vendor-editor"></div> }
+        <div id="dms-location-overlay" hidden><button type="button" id="dms-location-close">Return to live document</button><p id="dms-location-status"></p><iframe id="dms-location-frame" title="Saved document location"></iframe></div>
+        @if(Model.Watermark is string label){<div class="dms-single-watermark" aria-hidden="true"><span>@label</span></div>}
+    </section>
+    @if(s.Mode != EditorMode.View){
+    <aside id="dms-editor-comments" class="dms-comment-pane" aria-label="DMS review comments">
+        <div id="dms-comment-status" role="status" class="small" aria-live="polite"></div>
+        <div id="dms-comment-content">@await Html.PartialAsync("_ReviewComments", Model.Review)</div>
+        @if(Model.Review.Attachments.Count>0){
+         <div class="p-2 border-top"><h6>Attachments</h6><ul class="list-unstyled mb-0">
+          @foreach(var attachment in Model.Review.Attachments){<li><a asp-action="Attachment" asp-route-id="@attachment.id" asp-route-documentId="@s.DocumentId" target="_blank" rel="noopener">@attachment.title</a></li>}
+         </ul></div>
+        }
+    </aside>
+    }
+</div>
+<script src="~/js/editor/collabora-adapter.js" asp-append-version="true"></script>
+<script src="~/js/editor/callback-adapters.js" asp-append-version="true"></script>
+<script src="~/js/editor/dms-editor.js" asp-append-version="true"></script>

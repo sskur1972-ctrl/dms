@@ -1,0 +1,19 @@
+@using DMS.Web.Services.Intelligence
+@model List<KnowledgeSource>
+@{ViewData["PageTitle"]="Review references";Layout="~/Views/Shared/_Layout.cshtml";}
+<partial name="_AdminPageTitle" />
+<div class="card"><div class="card-body">
+@if(TempData["IntelligenceMessage"] is string notice){<div class="alert alert-info" role="status">@notice</div>}
+<p>Maintain approved GMP guidance and internal standards for RAG. Active references are available to document reviewers. Only activate material approved for that audience.</p>
+<form asp-action="AddReference" method="post" enctype="multipart/form-data" class="row g-3 mb-4">
+<div class="col-md-6"><label class="form-label" for="title">Reference title</label><input id="title" name="title" class="form-control" maxlength="200" required /></div>
+<div class="col-md-6"><label class="form-label" for="sourceUri">Source link (optional)</label><input id="sourceUri" name="sourceUri" class="form-control" type="url" placeholder="https://…" maxlength="2000" /></div>
+<div class="col-12"><label class="form-label" for="body">Reference text</label><textarea id="body" name="body" class="form-control" rows="5" maxlength="2000000"></textarea></div>
+<div class="col-md-6"><label class="form-label" for="file">Or upload a reference (up to 25 MB)</label><input id="file" name="file" class="form-control" type="file" accept=".docx,.pdf,.xlsx,.pptx,.odt,.ods,.odp,.png,.jpg,.jpeg,.tif,.tiff" /></div>
+<div class="col-md-6 align-self-end"><label><input name="active" value="true" type="checkbox" /> Approved for use by document reviewers</label></div>
+<div class="col-12"><button class="btn btn-primary">Add and index reference</button> <a class="btn btn-light" asp-action="Index">Back</a></div>
+</form>
+<table class="table"><thead><tr><th>Reference</th><th>Status</th><th>Added (UTC)</th><th></th></tr></thead><tbody>
+@foreach(var source in Model){<tr><td><a asp-action="Reference" asp-route-id="@source.Id">@source.Title</a> @if(source.Uri!=null){<a href="@source.Uri" target="_blank" rel="noopener noreferrer">Source</a>}<small class="d-block text-muted">SHA-256 @source.Sha</small></td><td>@(source.Active?"Active":"Inactive")</td><td>@source.CreatedAt.ToString("dd-MMM-yyyy HH:mm")</td><td><form asp-action="ReferenceStatus" method="post"><input type="hidden" name="id" value="@source.Id" /><input type="hidden" name="active" value="@((!source.Active).ToString().ToLowerInvariant())" /><button class="btn btn-sm btn-outline-secondary">@(source.Active?"Deactivate":"Activate")</button></form></td></tr>}
+</tbody></table>
+</div></div>

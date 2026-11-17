@@ -1,0 +1,152 @@
+@using DMS.Model.Documents
+@using DMS.Model.Master
+@using DMS.Model.Account
+@model List<DocumentListItem>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["PageTitle"] = "Document Register";
+    ViewData["Section"] = "Documents";
+    var q = ViewBag.query as DocumentSearchQuery ?? new DocumentSearchQuery();
+    var types = ViewBag.types as List<DocumentType> ?? new();
+    var departments = ViewBag.departments as List<DepartmentDropDownViewModel> ?? new();
+    var states = ViewBag.states as List<DocumentState> ?? new();
+    long total = Model.FirstOrDefault()?.total_count ?? 0;
+    int pageSize = Math.Clamp(q.pageSize, 10, 200);
+    int pages = (int)Math.Max(1, (total + pageSize - 1) / pageSize);
+    int page = Math.Min(Math.Max(q.page, 1), pages);
+
+    string PageUrl(int p, string? sort = null, bool? desc = null) => Context.Request.Path + QueryString.Create(new Dictionary<string, string?>
+    {
+        ["q"] = q.q, ["typeId"] = q.typeId?.ToString(), ["departmentId"] = q.departmentId?.ToString(), ["stateId"] = q.stateId?.ToString(),
+        ["mine"] = q.mine ? "true" : null, ["pending"] = q.pending ? "true" : null, ["includeObsolete"] = q.includeObsolete ? "true" : "false",
+        ["content"] = q.content ? "true" : null, ["sort"] = sort ?? q.sort, ["desc"] = (desc ?? q.desc) ? "true" : "false",
+        ["page"] = p.ToString(), ["pageSize"] = pageSize.ToString()
+    }).ToUriComponent();
+    string SortLink(string key, string label) => $"<a class=\"text-reset\" href=\"{PageUrl(1, key, q.sort == key ? !q.desc : false)}\">{label}{(q.sort == key ? (q.desc ? " ▼" : " ▲") : "")}</a>";
+}
+<partial name="_AdminPageTitle" />
+<div class="d-flex gap-2 mb-3"><a class="btn btn-outline-primary" asp-controller="Intelligence" asp-action="Search">Smart Search</a>@if(ViewBag.canTrends==true){<a class="btn btn-light" asp-controller="Reports" asp-action="Run" asp-route-id="TRENDS">Trends Analysis</a>}</div>
+
+<div class="row" id="document-register">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-header border-0">
+                <form method="get" asp-action="Index" class="document-register-filters">
+                  <div class="row g-3 align-items-end">
+                    <div class="col-xl-3 col-md-6 col-12">
+                        <label class="form-label mb-1">Search</label>
+                        <input name="q" value="@q.q" class="form-control" placeholder="Number, title, keywords, summary" />
+                    </div>
+                    <div class="col-xl-2 col-md-6 col-12">
+                        <label class="form-label mb-1">Document Type</label>
+                        <select name="typeId" class="form-select">
+                            <option value="">All</option>
+                            @foreach (var t in types) { <option value="@t.id" selected="@(q.typeId == t.id)">@t.code - @t.name</option> }
+                        </select>
+                    </div>
+                    <div class="col-xl-2 col-md-6 col-12">
+                        <label class="form-label mb-1">Department</label>
+                        <select name="departmentId" class="form-select">
+                            <option value="">All</option>
+                            @foreach (var d in departments) { <option value="@d.id" selected="@(q.departmentId == d.id)">@d.DisplayText</option> }
+                        </select>
+                    </div>
+                    <div class="col-xl-2 col-md-6 col-12">
+                        <label class="form-label mb-1">State</label>
+                        <select name="stateId" class="form-select">
+                            <option value="">All</option>
+                            @foreach (var s in states) { <option value="@s.id" selected="@(q.stateId == s.id)">@s.name</option> }
+                        </select>
+                    </div>
+                    <div class="col-xl-3 col-md-12 d-flex flex-wrap gap-2 justify-content-xl-end">
+                        <a asp-action="Index" class="btn btn-light">Clear</a>
+                        <button type="submit" class="btn btn-primary"><i class="ri-search-line me-1"></i> Search</button>
+                        @if (ViewBag.canCreate == true)
+                        {
+                            <a class="btn btn-success add-btn" asp-action="Create"><i class="ri-add-line align-bottom me-1"></i> New Document</a>
+                        }
+                    </div>
+                  </div>
+                  <div class="row g-2 align-items-center mt-1">
+                    <div class="col-12 d-flex flex-wrap align-items-center gap-3 document-register-checks">
+                        <div class="form-check"><input class="form-check-input" type="checkbox" name="mine" value="true" id="fMine" checked="@q.mine" /><label class="form-check-label" for="fMine">My documents</label></div>
+                        <div class="form-check"><input class="form-check-input" type="checkbox" name="pending" value="true" id="fPending" checked="@q.pending" /><label class="form-check-label" for="fPending">Pending with me</label></div>
+                        <div class="form-check"><input class="form-check-input" type="checkbox" name="content" value="true" id="fContent" checked="@q.content" /><label class="form-check-label" for="fContent">Search text of files</label></div>
+                        <div class="form-check"><input class="form-check-input" type="checkbox" name="includeObsolete" value="true" id="fObs" checked="@q.includeObsolete" /><label class="form-check-label" for="fObs">Include obsolete</label></div>
+                        <input type="hidden" name="includeObsolete" value="false" />
+                    </div>
+                </form>
+            </div>
+            <div class="card-body">
+                <div class="d-flex justify-content-between mb-2">
+                    <span class="text-muted">@total document(s)@(string.IsNullOrWhiteSpace(q.q) ? "" : $" matching \"{q.q}\"")</span>
+                    <span class="text-muted small">A result shows that a document exists; opening it is a separate, recorded act.</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="table align-middle table-hover table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>@Html.Raw(SortLink("number", "Document No"))</th>
+                                <th>@Html.Raw(SortLink("title", "Title"))</th>
+                                <th>@Html.Raw(SortLink("type", "Type"))</th>
+                                <th>@Html.Raw(SortLink("department", "Department"))</th>
+                                <th>Rev</th>
+                                <th>@Html.Raw(SortLink("state", "State"))</th>
+                                <th>Effective</th>
+                                <th>@Html.Raw(SortLink("owner", "Owner"))</th>
+                                <th>@Html.Raw(SortLink("created", "Created"))</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.Count == 0)
+                            {
+                                <tr><td colspan="9" class="text-center text-muted">No documents match the search.</td></tr>
+                            }
+                            @foreach (var d in Model)
+                            {
+                                <tr>
+                                    <td>
+                                        <a asp-action="Details" asp-route-id="@d.id" class="fw-semibold">@d.document_number</a>
+                                        @if (d.pending_with_me) { <span class="badge bg-warning ms-1">pending with me</span> }
+                                    </td>
+                                    <td>
+                                        @d.title
+                                        @if (!string.IsNullOrWhiteSpace(d.keywords)) { <br /><small class="text-muted">@d.keywords</small> }
+                                    </td>
+                                    <td>@d.document_type_code</td>
+                                    <td>@d.department_code</td>
+                                    <td>@d.DisplayRevision</td>
+                                    <td><span class="badge @(string.IsNullOrEmpty(d.badge_css_class) ? "bg-secondary" : d.badge_css_class)">@d.state_name</span></td>
+                                    <td>@(d.effective_version_no == null ? "" : $"{d.effective_version_no} · {d.effective_from:dd-MMM-yyyy}")</td>
+                                    <td>@d.owner_name</td>
+                                    <td>@d.created_at.ToString("dd-MMM-yyyy")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+                @if (pages > 1)
+                {
+                    <nav>
+                        <ul class="pagination justify-content-end mb-0">
+                            <li class="page-item @(page <= 1 ? "disabled" : "")"><a class="page-link" href="@PageUrl(page - 1)">Previous</a></li>
+                            @for (var p = Math.Max(1, page - 3); p <= Math.Min(pages, page + 3); p++)
+                            {
+                                <li class="page-item @(p == page ? "active" : "")"><a class="page-link" href="@PageUrl(p)">@p</a></li>
+                            }
+                            <li class="page-item @(page >= pages ? "disabled" : "")"><a class="page-link" href="@PageUrl(page + 1)">Next</a></li>
+                        </ul>
+                    </nav>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+<style>
+    #document-register.row { width: 100%; margin-left: 0; margin-right: 0; }
+    #document-register { min-width: 0; max-width: 100%; overflow-x: clip; }
+    #document-register .card, #document-register .card-header, #document-register .card-body { min-width: 0; max-width: 100%; }
+    #document-register .document-register-filters { width: 100%; min-width: 0; }
+    #document-register .document-register-checks .form-check { margin: 0; white-space: nowrap; }
+    #document-register .table-responsive { max-width: 100%; }
+</style>

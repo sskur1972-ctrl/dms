@@ -1,0 +1,552 @@
+﻿@*
+    For more information on enabling MVC for empty projects, visit https://go.microsoft.com/fwlink/?LinkID=397860
+*@
+@{
+}
+@model DMS.Model.Legacy.SingleLegacyImportForm
+
+@{
+    ViewData["Title"] = "Single Legacy Document Import";
+    ViewData["PageTitle"] = "Single Legacy Document Import";
+    ViewData["Section"] = "Compliance";
+
+    var meaning =
+        ViewBag.meaning as string ?? "Approved by";
+
+    var maxMb =
+        ViewBag.maxMb ?? 500;
+
+    var userName =
+        ViewBag.userName as string ?? "";
+}
+
+<div class="container-fluid">
+
+    <div class="d-flex justify-content-between align-items-center mb-3">
+        <div>
+            <h3 class="mb-1">
+                Single Legacy Document Import
+            </h3>
+
+            <div class="text-muted">
+                Import one legacy document without using manifest.csv.
+            </div>
+        </div>
+
+        <a asp-action="Index"
+           class="btn btn-outline-secondary">
+            <i class="bi bi-arrow-left me-1"></i>
+            Back to Legacy Import
+        </a>
+    </div>
+
+    <div class="card shadow-sm">
+
+        <div class="card-header">
+            <h5 class="mb-0">
+                Document Details
+            </h5>
+        </div>
+
+        <div class="card-body">
+
+            <form asp-action="SingleImport"
+                  method="post"
+                  enctype="multipart/form-data"
+                  autocomplete="off"
+                  id="singleLegacyForm">
+
+                @Html.AntiForgeryToken()
+
+                <div asp-validation-summary="ModelOnly"
+                     class="text-danger mb-3">
+                </div>
+
+                <div class="row g-3">
+
+                    <!-- Batch Reference -->
+                    <div class="col-md-6">
+                        <label asp-for="BatchReference"
+                               class="form-label">
+                            Batch Reference <span class="text-danger">*</span>
+                        </label>
+
+                        <input asp-for="BatchReference"
+                               class="form-control" />
+
+                        <span asp-validation-for="BatchReference"
+                              class="text-danger">
+                        </span>
+                    </div>
+
+
+                    <!-- Document Access Scope -->
+                    <div class="col-md-6">
+                        <label asp-for="AccessScope" class="form-label">
+                            Document Access Scope <span class="text-danger">*</span>
+                        </label>
+
+                        <select asp-for="AccessScope" class="form-select">
+                            <option value="PLANT">Plant</option>
+                            <option value="GLOBAL">Global</option>
+                        </select>
+
+                        <span asp-validation-for="AccessScope"
+                              class="text-danger"></span>
+                    </div>
+
+
+                    <!-- Document File -->
+                    <div class="col-md-6">
+                        <label for="document"
+                               class="form-label">
+                            Document <span class="text-danger">*</span>
+                        </label>
+
+                        <input type="file"
+                               name="document"
+                               id="document"
+                               class="form-control"
+                               accept=".doc,.docx"
+                               required />
+
+                        <div class="form-text">
+                            Maximum size: @maxMb MB.
+                        </div>
+                    </div>
+
+                    <!-- Document Number -->
+                    <div class="col-md-6">
+                        <label asp-for="DocumentNumber"
+                               class="form-label">
+                            Document Number <span class="text-danger">*</span>
+                        </label>
+
+                        <input asp-for="DocumentNumber"
+                               class="form-control" />
+
+                        <span asp-validation-for="DocumentNumber"
+                              class="text-danger">
+                        </span>
+                    </div>
+
+                    <!-- Title -->
+                    <div class="col-md-6">
+                        <label asp-for="Title"
+                               class="form-label">
+                            Title <span class="text-danger">*</span>
+
+                        </label>
+
+                        <input asp-for="Title"
+                               class="form-control" />
+
+                        <span asp-validation-for="Title"
+                              class="text-danger">
+                        </span>
+                    </div>
+
+                    <!-- Document Type -->
+                    <!-- Document Type Dropdown -->
+                    <div class="col-md-6">
+                        <label asp-for="DocumentType" class="form-label">
+                            Document Type <span class="text-danger">*</span>
+                        </label>
+
+
+                        <select asp-for="DocumentType"
+                                asp-items="ViewBag.DocumentTypes"
+                                class="form-select">
+                            <option value="">-- Select Document Type --</option>
+                        </select>
+
+                        <span asp-validation-for="DocumentType"
+                              class="text-danger"></span>
+                    </div>
+
+
+                    <!-- Department -->
+                    <div class="col-md-6">
+                        <label asp-for="Department" class="form-label">
+                            Department <span class="text-danger">*</span>
+                        </label>
+
+                        <select asp-for="Department"
+                                asp-items="ViewBag.Departments"
+                                class="form-select">
+                            <option value="">-- Select Department --</option>
+                        </select>
+
+                        <span asp-validation-for="Department"
+                              class="text-danger"></span>
+                    </div>
+
+                    <!-- Revision -->
+                    <div class="col-md-6">
+                        <label asp-for="Revision"
+                               class="form-label">
+                            Revision <span class="text-danger">*</span>
+
+                        </label>
+
+                        <input asp-for="Revision"
+                               class="form-control" />
+
+                        <span asp-validation-for="Revision"
+                              class="text-danger">
+                        </span>
+                    </div>
+
+                    <!-- Owner -->
+                    <!-- Owner -->
+                    <div class="col-md-6">
+                        <label asp-for="Owner" class="form-label"></label>
+                        <select asp-for="Owner"
+                                asp-items="ViewBag.Owners"
+                                class="form-select">
+                            <option value="">-- Select Owner --</option>
+                        </select>
+                        <span asp-validation-for="Owner" class="text-danger"></span>
+                    </div>
+
+                    <!-- Effective From -->
+                    <div class="col-md-6">
+                        <label asp-for="EffectiveFrom" class="form-label">
+                            Effective From <span class="text-danger">*</span>
+                        </label>
+                        <input asp-for="EffectiveFrom"
+                               type="date"
+                               class="form-control" />
+                        <span asp-validation-for="EffectiveFrom"
+                              class="text-danger"></span>
+                    </div>
+
+                    <!-- Periodic Review Due -->
+                    <div class="col-md-6">
+                        <label asp-for="PeriodicReviewDue"
+                               class="form-label">
+                        </label>
+
+                        <input asp-for="PeriodicReviewDue"
+                               type="date"
+                               class="form-control" />
+
+                        <span asp-validation-for="PeriodicReviewDue"
+                              class="text-danger">
+                        </span>
+                    </div>
+
+                    <!-- Keywords -->
+                    <div class="col-md-6">
+                        <label asp-for="Keywords"
+                               class="form-label">
+                        </label>
+
+                        <input asp-for="Keywords"
+                               class="form-control"
+                               placeholder="deviation;capa" />
+
+                        <span asp-validation-for="Keywords"
+                              class="text-danger">
+                        </span>
+                    </div>
+
+                    <!-- Legacy Reference -->
+                    <div class="col-md-6">
+                        <label asp-for="LegacyReference"
+                               class="form-label">
+                        </label>
+
+                        <input asp-for="LegacyReference"
+                               class="form-control"
+                               placeholder="PAPER-ARCHIVE-BOX-12" />
+
+                        <span asp-validation-for="LegacyReference"
+                              class="text-danger">
+                        </span>
+                    </div>
+
+                    <!-- Training Required -->
+                    <div class="col-md-6">
+                        <div class="form-check mt-4">
+
+                            <input asp-for="TrainingRequired"
+                                   class="form-check-input" />
+
+                            <label asp-for="TrainingRequired"
+                                   class="form-check-label">
+                            </label>
+
+                        </div>
+                    </div>
+
+                    <!-- Justification -->
+                    <div class="col-12">
+                        <label asp-for="Justification"
+                               class="form-label">
+                            Justification <span class="text-danger">*</span>
+
+                        </label>
+
+                        <textarea asp-for="Justification"
+                                  class="form-control"
+                                  rows="3"></textarea>
+
+                        <span asp-validation-for="Justification"
+                              class="text-danger">
+                        </span>
+                    </div>
+
+                </div>
+
+                <hr class="my-4" />
+
+                <!-- Import Mode -->
+                <div class="mb-3">
+
+                    <label class="form-label fw-semibold">
+                        Import Mode
+                    </label>
+
+                    <div class="d-flex gap-4">
+
+                        <div class="form-check">
+
+                            <input type="radio"
+                                   asp-for="DryRun"
+                                   value="true"
+                                   class="form-check-input"
+                                   id="dryRunYes" />
+
+                            <label class="form-check-label"
+                                   for="dryRunYes">
+                                Validate Only
+                            </label>
+
+                        </div>
+
+                        <div class="form-check">
+
+                            <input type="radio"
+                                   asp-for="DryRun"
+                                   value="false"
+                                   class="form-check-input"
+                                   id="dryRunNo" />
+
+                            <label class="form-check-label"
+                                   for="dryRunNo">
+                                Import Document
+                            </label>
+
+                        </div>
+
+                    </div>
+
+                    <div class="form-text">
+                        Validate Only checks the metadata and document
+                        without creating the actual document import.
+                    </div>
+                </div>
+
+                <!-- Signature -->
+                <div id="signatureSection"
+                     class="border rounded p-3 mb-3"
+                     style="display:none;">
+
+                    <h6 class="mb-3">
+                        Electronic Signature
+                    </h6>
+
+                    <div class="row g-3">
+
+                        <div class="col-md-6">
+
+                            <label class="form-label">
+                                Signature User Name
+                            </label>
+
+                            <input asp-for="SignatureUserName"
+                                   class="form-control"
+                                   readonly />
+
+                        </div>
+
+                        <div class="col-md-6">
+
+                            <label asp-for="SignaturePassword"
+                                   class="form-label">
+                            </label>
+
+                            <input asp-for="SignaturePassword"
+                                   type="password"
+                                   class="form-control"
+                                   autocomplete="new-password" />
+
+                            <span asp-validation-for="SignaturePassword"
+                                  class="text-danger">
+                            </span>
+
+                        </div>
+
+                        <div class="col-12">
+
+                            <div class="form-check">
+
+                                <input asp-for="MeaningAcknowledged"
+                                       class="form-check-input"
+                                       id="meaningAcknowledged" />
+
+                                <label asp-for="MeaningAcknowledged"
+                                       class="form-check-label"
+                                       for="meaningAcknowledged">
+
+                                    I acknowledge that this electronic
+                                    signature means "@meaning".
+
+                                </label>
+
+                            </div>
+
+                        </div>
+
+                    </div>
+
+                </div>
+
+                <!-- Buttons -->
+                <div class="d-flex justify-content-end gap-2">
+
+                    <a asp-action="Index"
+                       class="btn btn-secondary">
+                        Cancel
+                    </a>
+
+                    <button type="submit"
+                            id="submitButton"
+                            class="btn btn-primary">
+                        Validate
+                    </button>
+
+                </div>
+
+            </form>
+
+        </div>
+    </div>
+</div>
+
+@section Scripts
+{
+    <partial name="_ValidationScriptsPartial" />
+
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+
+            const form =
+                document.getElementById("singleLegacyForm");
+
+            const signatureSection =
+                document.getElementById("signatureSection");
+
+            const submitButton =
+                document.getElementById("submitButton");
+
+            const signaturePassword =
+                document.getElementById("SignaturePassword");
+
+            const meaningAcknowledged =
+                document.getElementById("meaningAcknowledged");
+
+            const dryRunInputs =
+                document.querySelectorAll(
+                    'input[name="DryRun"]'
+                );
+
+            function isDryRun() {
+
+                const selected =
+                    document.querySelector(
+                        'input[name="DryRun"]:checked'
+                    );
+
+                return selected &&
+                       selected.value.toLowerCase() === "true";
+            }
+
+            function updateImportMode() {
+
+                if (isDryRun()) {
+
+                    signatureSection.style.display = "none";
+
+                    submitButton.textContent =
+                        "Validate";
+
+                    submitButton.classList.remove(
+                        "btn-success"
+                    );
+
+                    submitButton.classList.add(
+                        "btn-primary"
+                    );
+
+                    if (signaturePassword) {
+                        signaturePassword.required = false;
+                    }
+
+                    if (meaningAcknowledged) {
+                        meaningAcknowledged.required = false;
+                    }
+
+                }
+                else {
+
+                    signatureSection.style.display = "block";
+
+                    submitButton.textContent =
+                        "Import and Sign";
+
+                    submitButton.classList.remove(
+                        "btn-primary"
+                    );
+
+                    submitButton.classList.add(
+                        "btn-success"
+                    );
+
+                    if (signaturePassword) {
+                        signaturePassword.required = true;
+                    }
+
+                    if (meaningAcknowledged) {
+                        meaningAcknowledged.required = true;
+                    }
+                }
+            }
+
+            dryRunInputs.forEach(function (input) {
+
+                input.addEventListener(
+                    "change",
+                    updateImportMode
+                );
+
+            });
+
+            updateImportMode();
+
+            form.addEventListener(
+                "submit",
+                function () {
+
+                    submitButton.disabled = true;
+
+                    submitButton.innerHTML =
+                        '<span class="spinner-border spinner-border-sm me-1"></span>' +
+                        'Processing...';
+
+                }
+            );
+        });
+    </script>
+}

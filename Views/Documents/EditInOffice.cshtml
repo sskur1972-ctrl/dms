@@ -1,0 +1,60 @@
+@using DMS.Web.Services.Office
+@model WopiSessionDto
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    var s = Model;
+    ViewData["PageTitle"] = $"{s.DocumentNumber} - Office editor";
+    ViewData["Section"] = "Documents";
+    string editor = ViewBag.editorOrigin as string ?? "";
+
+    // This page, and only this page, allows the editor's origin in a frame and as a form target.
+    Context.Response.Headers["Content-Security-Policy"] =
+        $"frame-src 'self' {editor}; form-action 'self' {editor}; frame-ancestors 'self'; base-uri 'self'";
+
+    // Downloads are never permitted: allow-downloads is deliberately absent - the browser, not the editor, enforces it.
+    const string sandbox = "allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox";
+}
+<link rel="stylesheet" href="~/css/dms-editor.css" asp-append-version="true" />
+<style>
+    .dms-office-frame { height: calc(100vh - 250px); min-height: 460px; border: 1px solid #d8dee8; border-radius: 10px; overflow: hidden; background: #f4f6fa; }
+    .dms-office-frame iframe { display: block; width: 100%; height: 100%; border: 0; }
+</style>
+
+<div class="d-flex justify-content-between align-items-start flex-wrap gap-2 mb-2 mt-2">
+    <div>
+        <div class="h5 mb-1"><span class="dms-mono">@s.DocumentNumber</span></div>
+        <div>@s.Title</div>
+    </div>
+    <div class="d-flex gap-2 flex-wrap align-items-center">
+        <span class="badge bg-secondary">Revision @s.DisplayRevision</span>
+        @if (s.ReadOnly) { <span class="badge bg-warning text-dark">Read-only</span> }
+        <span class="badge bg-light text-dark">@s.EditorName</span>
+        <a class="btn btn-sm btn-outline-secondary" asp-action="Details" asp-route-id="@s.DocumentId">Back to document</a>
+    </div>
+</div>
+
+@if (s.ReadOnly)
+{
+    <div class="dms-note dms-note-warn">
+        <span><strong>Open read-only.</strong> Your access rights do not permit changing this revision in its current state, so the editor will not save.</span>
+    </div>
+}
+
+@* The token is POSTed into the frame, not put in its URL: a URL is logged by every proxy and kept in history. *@
+<form id="office_form" name="office_form" target="office_frame" action="@s.EditorUrl" method="post">
+    <input type="hidden" name="access_token" value="@s.AccessToken" />
+    <input type="hidden" name="access_token_ttl" value="@s.AccessTokenTtl" />
+</form>
+
+<div class="dms-office-frame">
+    <iframe id="office_frame" name="office_frame" title="Office editor" sandbox="@sandbox" allowfullscreen></iframe>
+</div>
+
+<div class="dms-help mt-2">
+    The editor is a separate application (@s.EditorName) running on your own network; the document is served to it by this system and
+    comes back to this system. The file does not leave your infrastructure. Every save is recorded in the audit trail.
+</div>
+
+<script>
+    document.addEventListener('DOMContentLoaded', function () { document.getElementById('office_form').submit(); });
+</script>

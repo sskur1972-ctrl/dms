@@ -1,0 +1,81 @@
+@using DMS.Web.Services.Office
+@model WopiPreflightReportDto
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["PageTitle"] = "Office Editor (Collabora)";
+    string BadgeFor(WopiPreflightOutcome outcome) => outcome switch
+    {
+        WopiPreflightOutcome.Pass => "bg-success",
+        WopiPreflightOutcome.Warn => "bg-warning text-dark",
+        WopiPreflightOutcome.Fail => "bg-danger",
+        _ => "bg-secondary"
+    };
+    string LabelFor(WopiPreflightOutcome outcome) => outcome switch
+    {
+        WopiPreflightOutcome.Pass => "OK",
+        WopiPreflightOutcome.Warn => "Check",
+        WopiPreflightOutcome.Fail => "Blocked",
+        _ => "Not checkable"
+    };
+}
+<partial name="_AdminPageTitle" />
+
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-header d-flex align-items-center">
+                <div class="flex-grow-1">
+                    <h5 class="card-title mb-0">Editing controlled documents in Collabora Online (WOPI)</h5>
+                    <small class="text-muted">A WOPI integration fails silently (a grey frame). Every check that can be made from this server is made here.</small>
+                </div>
+                <a class="btn btn-sm btn-soft-primary me-2" asp-action="Index">Re-run checks</a>
+                <a class="btn btn-sm btn-light" asp-controller="SystemConfig" asp-action="Index" asp-route-category="office">Office settings</a>
+            </div>
+            <div class="card-body">
+                @if (!Model.Enabled)
+                {
+                    <div class="alert alert-warning">The editor is <strong>switched off</strong> - the <em>Edit in Office editor</em> button does not appear.
+                        Get the checks below to pass, then set <code>office.wopi.enabled</code> to <code>true</code>.</div>
+                }
+                else if (Model.Failures > 0)
+                {
+                    <div class="alert alert-danger">The editor is switched on but @Model.Failures check(s) are blocking - an author would get a frame that never loads.</div>
+                }
+                else
+                {
+                    <div class="alert alert-success">Nothing is blocking. The checks marked <em>Not checkable</em> can only be proved by opening a document.</div>
+                }
+
+                <table class="table table-sm table-bordered align-middle">
+                    <thead class="table-light"><tr><th style="width:8rem">Result</th><th style="width:22rem">Check</th><th>What was found, and what to do</th></tr></thead>
+                    <tbody>
+                        @foreach (var check in Model.Checks)
+                        {
+                            <tr>
+                                <td><span class="badge @BadgeFor(check.Outcome)">@LabelFor(check.Outcome)</span></td>
+                                <td>@check.Name</td>
+                                <td>@check.Detail @if (!string.IsNullOrWhiteSpace(check.Remedy)) { <div class="text-muted small mt-1">@check.Remedy</div> }</td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+
+                <h6 class="mt-4">What this system is using</h6>
+                <table class="table table-sm table-bordered">
+                    <tbody>
+                        <tr><th style="width:22rem">Editor (office.wopi.editor)</th><td class="font-monospace">@(Model.EditorName ?? "-")</td></tr>
+                        <tr><th>Discovery URL (office.wopi.discoveryUrl)</th><td class="font-monospace">@(string.IsNullOrWhiteSpace(Model.DiscoveryUrl) ? "-" : Model.DiscoveryUrl)</td></tr>
+                        <tr><th>This application's URL as the EDITOR reaches it (office.wopi.publicBaseUrl)</th><td class="font-monospace">@(string.IsNullOrWhiteSpace(Model.PublicBaseUrl) ? "-" : Model.PublicBaseUrl)</td></tr>
+                        <tr><th>Editor action for .docx</th><td class="font-monospace small">@(Model.DocxEditUrl ?? "-")</td></tr>
+                        <tr><th>Editor action for .xlsx</th><td class="font-monospace small">@(Model.XlsxEditUrl ?? "-")</td></tr>
+                    </tbody>
+                </table>
+                <p class="text-muted small mb-0">
+                    Collabora: <code>office.wopi.discoveryUrl</code> = <code>https://&lt;collabora-host&gt;:9980/hosting/discovery</code>;
+                    in Collabora's <code>coolwsd.xml</code> (or <code>aliasgroup1</code> env) allow this application's URL.
+                    The user also needs the permission <em>Edit in the Office editor</em>.
+                </p>
+            </div>
+        </div>
+    </div>
+</div>

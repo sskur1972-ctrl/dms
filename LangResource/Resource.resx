@@ -1,0 +1,645 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <!-- 
+    Microsoft ResX Schema 
+    
+    Version 2.0
+    
+    The primary goals of this format is to allow a simple XML format 
+    that is mostly human readable. The generation and parsing of the 
+    various data types are done through the TypeConverter classes 
+    associated with the data types.
+    
+    Example:
+    
+    ... ado.net/XML headers & schema ...
+    <resheader name="resmimetype">text/microsoft-resx</resheader>
+    <resheader name="version">2.0</resheader>
+    <resheader name="reader">System.Resources.ResXResourceReader, System.Windows.Forms, ...</resheader>
+    <resheader name="writer">System.Resources.ResXResourceWriter, System.Windows.Forms, ...</resheader>
+    <data name="Name1"><value>this is my long string</value><comment>this is a comment</comment></data>
+    <data name="Color1" type="System.Drawing.Color, System.Drawing">Blue</data>
+    <data name="Bitmap1" mimetype="application/x-microsoft.net.object.binary.base64">
+        <value>[base64 mime encoded serialized .NET Framework object]</value>
+    </data>
+    <data name="Icon1" type="System.Drawing.Icon, System.Drawing" mimetype="application/x-microsoft.net.object.bytearray.base64">
+        <value>[base64 mime encoded string representing a byte array form of the .NET Framework object]</value>
+        <comment>This is a comment</comment>
+    </data>
+                
+    There are any number of "resheader" rows that contain simple 
+    name/value pairs.
+    
+    Each data row contains a name, and value. The row also contains a 
+    type or mimetype. Type corresponds to a .NET class that support 
+    text/value conversion through the TypeConverter architecture. 
+    Classes that don't support this are serialized and stored with the 
+    mimetype set.
+    
+    The mimetype is used for serialized objects, and tells the 
+    ResXResourceReader how to depersist the object. This is currently not 
+    extensible. For a given mimetype the value must be set accordingly:
+    
+    Note - application/x-microsoft.net.object.binary.base64 is the format 
+    that the ResXResourceWriter will generate, however the reader can 
+    read any of the formats listed below.
+    
+    mimetype: application/x-microsoft.net.object.binary.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Binary.BinaryFormatter
+            : and then encoded with base64 encoding.
+    
+    mimetype: application/x-microsoft.net.object.soap.base64
+    value   : The object must be serialized with 
+            : System.Runtime.Serialization.Formatters.Soap.SoapFormatter
+            : and then encoded with base64 encoding.
+
+    mimetype: application/x-microsoft.net.object.bytearray.base64
+    value   : The object must be serialized into a byte array 
+            : using a System.ComponentModel.TypeConverter
+            : and then encoded with base64 encoding.
+    -->
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <data name="AddBatchFailMsg" xml:space="preserve">
+    <value>Batch registration Failed !</value>
+  </data>
+  <data name="AddBatchMsg" xml:space="preserve">
+    <value>Batch created successfully.</value>
+  </data>
+  <data name="AddFilmMsg" xml:space="preserve">
+    <value>Film created successfully.</value>
+  </data>
+  <data name="AddUserFailMsg" xml:space="preserve">
+    <value>User registration failed !</value>
+  </data>
+  <data name="AddUserMsg" xml:space="preserve">
+    <value>User created successfully.</value>
+  </data>
+  <data name="AddVendor" xml:space="preserve">
+    <value>Add Vendor List</value>
+  </data>
+  <data name="AddVendorLoc" xml:space="preserve">
+    <value>Add Vendor Location</value>
+  </data>
+  <data name="AddVendorLocDetails" xml:space="preserve">
+    <value>Add Vendor Location Details</value>
+  </data>
+  <data name="Batch" xml:space="preserve">
+    <value>Batch</value>
+  </data>
+  <data name="BatchAlreadyExists" xml:space="preserve">
+    <value>Given batch number already exists !</value>
+  </data>
+  <data name="BatchAlreadyUsed" xml:space="preserve">
+    <value>Batch quantity already used !</value>
+  </data>
+  <data name="BatchCreation" xml:space="preserve">
+    <value>Batch Creation.</value>
+  </data>
+  <data name="BatchDelFailMsg" xml:space="preserve">
+    <value>Failed to delete batch !</value>
+  </data>
+  <data name="BatchDetails" xml:space="preserve">
+    <value>View Batch Details.</value>
+  </data>
+  <data name="BatchEditErrorMsg" xml:space="preserve">
+    <value>Error to Edit Batch.</value>
+  </data>
+  <data name="BatchErrorMsg" xml:space="preserve">
+    <value>Error to create Batch.</value>
+  </data>
+  <data name="BatchView" xml:space="preserve">
+    <value>View Batch.</value>
+  </data>
+  <data name="CarAddMSg" xml:space="preserve">
+    <value>Car created successfully.</value>
+  </data>
+  <data name="carcreation" xml:space="preserve">
+    <value>Car Creation</value>
+  </data>
+  <data name="CarDataNotFound" xml:space="preserve">
+    <value>No data found for car list !</value>
+  </data>
+  <data name="CarDeleteFailmsg" xml:space="preserve">
+    <value>Failed to delete car !</value>
+  </data>
+  <data name="CarDesignAlreadyExists" xml:space="preserve">
+    <value>Given design with same car already exists !</value>
+  </data>
+  <data name="CarFailMSg" xml:space="preserve">
+    <value>Car registration Failed !</value>
+  </data>
+  <data name="CarList" xml:space="preserve">
+    <value>Car List</value>
+  </data>
+  <data name="CarUpdateFailMSg" xml:space="preserve">
+    <value>Car updation failed !</value>
+  </data>
+  <data name="CarUpdatemsg" xml:space="preserve">
+    <value>updated successfully.</value>
+  </data>
+  <data name="ComponentDataNotFound" xml:space="preserve">
+    <value>No data found for component list !</value>
+  </data>
+  <data name="CreateMake" xml:space="preserve">
+    <value>Make Creation</value>
+  </data>
+  <data name="creation" xml:space="preserve">
+    <value>created successfully.</value>
+  </data>
+  <data name="creation1" xml:space="preserve">
+    <value>created successfully</value>
+  </data>
+  <data name="days" xml:space="preserve">
+    <value>days.</value>
+  </data>
+  <data name="DeleteBatch" xml:space="preserve">
+    <value>Delete Batch.</value>
+  </data>
+  <data name="DeleteBatchDetails" xml:space="preserve">
+    <value>Delete Batch Details.</value>
+  </data>
+  <data name="DeleteCar" xml:space="preserve">
+    <value>Delete Car</value>
+  </data>
+  <data name="DeleteCarDetails" xml:space="preserve">
+    <value>Delete Car Details</value>
+  </data>
+  <data name="DeleteDesign" xml:space="preserve">
+    <value>Delete Design</value>
+  </data>
+  <data name="DeleteDesignDetails" xml:space="preserve">
+    <value>Delete Design details</value>
+  </data>
+  <data name="DeleteDesignMsg" xml:space="preserve">
+    <value>Design deleted Successfully.</value>
+  </data>
+  <data name="DeleteFailmsg" xml:space="preserve">
+    <value>not deleted.</value>
+  </data>
+  <data name="DeleteFilmData" xml:space="preserve">
+    <value>Delete film Details</value>
+  </data>
+  <data name="DeleteMake" xml:space="preserve">
+    <value>Delete Make Details</value>
+  </data>
+  <data name="DeleteModel" xml:space="preserve">
+    <value>Delete Model</value>
+  </data>
+  <data name="DeleteModelDetails" xml:space="preserve">
+    <value>Delete Model Details</value>
+  </data>
+  <data name="Deletemsg" xml:space="preserve">
+    <value>deleted successfully.</value>
+  </data>
+  <data name="DeleteUser" xml:space="preserve">
+    <value>Delete User</value>
+  </data>
+  <data name="DeleteVendor" xml:space="preserve">
+    <value>Delete Vendor</value>
+  </data>
+  <data name="DelUserFailMsg" xml:space="preserve">
+    <value>Failed to delete user !</value>
+  </data>
+  <data name="DelUserMsg" xml:space="preserve">
+    <value>User deleted successfully.</value>
+  </data>
+  <data name="DelVenLoc" xml:space="preserve">
+    <value>Delete Vendor Location</value>
+  </data>
+  <data name="DelVenLocDetails" xml:space="preserve">
+    <value>Delete Vendor Location Details</value>
+  </data>
+  <data name="DesignCreateFailMsg" xml:space="preserve">
+    <value>Design registration failed !</value>
+  </data>
+  <data name="DesignCreateSuccessMsg" xml:space="preserve">
+    <value>Design Created Successfully.</value>
+  </data>
+  <data name="DesignCreation" xml:space="preserve">
+    <value>Design Creation</value>
+  </data>
+  <data name="DesignDataNotFound" xml:space="preserve">
+    <value>No data found for the provided design ID !</value>
+  </data>
+  <data name="DesignDelFailMsg" xml:space="preserve">
+    <value>Design deletion failed!</value>
+  </data>
+  <data name="DesignList" xml:space="preserve">
+    <value>Design List</value>
+  </data>
+  <data name="DesignUpdateSuccessMsg" xml:space="preserve">
+    <value>Design updated successfully.</value>
+  </data>
+  <data name="DesignUpdatFailMsg" xml:space="preserve">
+    <value>Design updation failed !</value>
+  </data>
+  <data name="DesignView" xml:space="preserve">
+    <value>Design View</value>
+  </data>
+  <data name="Film" xml:space="preserve">
+    <value>Film</value>
+  </data>
+  <data name="FilmAddFailMSg" xml:space="preserve">
+    <value>Film registration Failed !</value>
+  </data>
+  <data name="FilmAlreadyExists" xml:space="preserve">
+    <value>Given film name already exists !</value>
+  </data>
+  <data name="FilmCreation" xml:space="preserve">
+    <value>film Creation</value>
+  </data>
+  <data name="FilmDelFailMsg" xml:space="preserve">
+    <value>Failed to delete film !</value>
+  </data>
+  <data name="FilmDetails" xml:space="preserve">
+    <value>film Details</value>
+  </data>
+  <data name="Filmlist" xml:space="preserve">
+    <value>film List</value>
+  </data>
+  <data name="InvaliduserMsg" xml:space="preserve">
+    <value>Invalid Username and Password.</value>
+  </data>
+  <data name="locmsg" xml:space="preserve">
+    <value>Location Successfully</value>
+  </data>
+  <data name="Make" xml:space="preserve">
+    <value>Make</value>
+  </data>
+  <data name="MakeAddFailMSg" xml:space="preserve">
+    <value>Make registration Failed !</value>
+  </data>
+  <data name="MakeAddMSg" xml:space="preserve">
+    <value>Make created successfully.</value>
+  </data>
+  <data name="MakeAlreadyExists" xml:space="preserve">
+    <value>Given make name already exists !</value>
+  </data>
+  <data name="MakeDelete" xml:space="preserve">
+    <value>Delete Make</value>
+  </data>
+  <data name="MakeDeleteFailmsg" xml:space="preserve">
+    <value>Failed to delete make !</value>
+  </data>
+  <data name="MakeDetails" xml:space="preserve">
+    <value>Make Details</value>
+  </data>
+  <data name="Makelist" xml:space="preserve">
+    <value>View Make List</value>
+  </data>
+  <data name="MakeUpdateFailMSg" xml:space="preserve">
+    <value>Make updation failed !</value>
+  </data>
+  <data name="MakeUpdateMSg" xml:space="preserve">
+    <value>Make updated successfully.</value>
+  </data>
+  <data name="Model" xml:space="preserve">
+    <value>Model</value>
+  </data>
+  <data name="ModelAddFailMSg" xml:space="preserve">
+    <value>Model registration Failed !</value>
+  </data>
+  <data name="ModelAddMSg" xml:space="preserve">
+    <value>Model created successfully.</value>
+  </data>
+  <data name="ModelAlreadyExists" xml:space="preserve">
+    <value>Given model already exists !</value>
+  </data>
+  <data name="ModelCreation" xml:space="preserve">
+    <value>Model Creation</value>
+  </data>
+  <data name="ModelDeleteFailmsg" xml:space="preserve">
+    <value>Failed to delete model !</value>
+  </data>
+  <data name="ModelMakeAlreadyExists" xml:space="preserve">
+    <value>Given model with same make already exists !</value>
+  </data>
+  <data name="ModelUpdateFailMSg" xml:space="preserve">
+    <value>Model updation failed !</value>
+  </data>
+  <data name="ModelUpdateMSg" xml:space="preserve">
+    <value>Model updated successfully.</value>
+  </data>
+  <data name="NoBatchDataFound" xml:space="preserve">
+    <value>No data found for the provided Batch!</value>
+  </data>
+  <data name="NoBatchsize" xml:space="preserve">
+    <value>No Data Found For Batchsize List !</value>
+  </data>
+  <data name="NoCarDataFound" xml:space="preserve">
+    <value>No data found for the provided car !</value>
+  </data>
+  <data name="NoCarType" xml:space="preserve">
+    <value>No Data Found For Type List !</value>
+  </data>
+  <data name="NoCityDataFound" xml:space="preserve">
+    <value>City not found for this state !</value>
+  </data>
+  <data name="NoDataForDealerList" xml:space="preserve">
+    <value>No data found for the dealer list !</value>
+  </data>
+  <data name="NoDataForFilmList" xml:space="preserve">
+    <value>No data found for the film list !</value>
+  </data>
+  <data name="NoDataFound" xml:space="preserve">
+    <value>Data not available !</value>
+  </data>
+  <data name="NoDataFoundForMake" xml:space="preserve">
+    <value>No data found for the provided make !</value>
+  </data>
+  <data name="NoDataFoundForModel" xml:space="preserve">
+    <value>No data found for the provided model !</value>
+  </data>
+  <data name="NoDesignFound" xml:space="preserve">
+    <value>No design found for this car !</value>
+  </data>
+  <data name="NoFilmData" xml:space="preserve">
+    <value>No data found for the provided Film !</value>
+  </data>
+  <data name="NoLocationFound" xml:space="preserve">
+    <value>No location found for this dealer !</value>
+  </data>
+  <data name="NoMakeData" xml:space="preserve">
+    <value>No Data Found For Make List !</value>
+  </data>
+  <data name="NoStateDataFound" xml:space="preserve">
+    <value>State not found for this country !</value>
+  </data>
+  <data name="NoVendorFound" xml:space="preserve">
+    <value>Vendors not found!</value>
+  </data>
+  <data name="passwordexpiredin" xml:space="preserve">
+    <value>Password will expire in</value>
+  </data>
+  <data name="passwordexpiry" xml:space="preserve">
+    <value>Your password has expired. Please reset it to proceed.</value>
+  </data>
+  <data name="Roles" xml:space="preserve">
+    <value>Roles</value>
+  </data>
+  <data name="RolesCreation" xml:space="preserve">
+    <value>Create Role</value>
+  </data>
+  <data name="RolesDelete" xml:space="preserve">
+    <value>Delete Roles </value>
+  </data>
+  <data name="RolesDetails" xml:space="preserve">
+    <value>Roles Details</value>
+  </data>
+  <data name="RolesList" xml:space="preserve">
+    <value>View Roles List</value>
+  </data>
+  <data name="SAPCodeAlreadyExists" xml:space="preserve">
+    <value>Given SAP film code already exists !</value>
+  </data>
+  <data name="String1" xml:space="preserve">
+    <value>updated successfully</value>
+  </data>
+  <data name="Update" xml:space="preserve">
+    <value>updated successfully</value>
+  </data>
+  <data name="UpdateBatch" xml:space="preserve">
+    <value>Update Batch.</value>
+  </data>
+  <data name="UpdateBatchDetail" xml:space="preserve">
+    <value>Update Batch Details.</value>
+  </data>
+  <data name="UpdateBatchMsg" xml:space="preserve">
+    <value>Batch updated successfully.</value>
+  </data>
+  <data name="UpdateCar" xml:space="preserve">
+    <value>Update car</value>
+  </data>
+  <data name="UpdateDesign" xml:space="preserve">
+    <value>Update Design</value>
+  </data>
+  <data name="UpdateFailBatchMsg" xml:space="preserve">
+    <value>Batch updation failed !</value>
+  </data>
+  <data name="UpdateFailFilmMsg" xml:space="preserve">
+    <value>Film updation failed !</value>
+  </data>
+  <data name="Updatefilm" xml:space="preserve">
+    <value>Update film</value>
+  </data>
+  <data name="UpdateFilmMsg" xml:space="preserve">
+    <value>Film updated successfully.</value>
+  </data>
+  <data name="UpdateMake" xml:space="preserve">
+    <value>Update Make</value>
+  </data>
+  <data name="UpdateModel" xml:space="preserve">
+    <value>Update Model</value>
+  </data>
+  <data name="UpdateModelDetails" xml:space="preserve">
+    <value>Update Model Details</value>
+  </data>
+  <data name="UpdateRoles" xml:space="preserve">
+    <value>Update Roles</value>
+  </data>
+  <data name="UpdateRolesDetails" xml:space="preserve">
+    <value>Data Fetch For Update Role</value>
+  </data>
+  <data name="UpdateUserDetails" xml:space="preserve">
+    <value>Update User Details.</value>
+  </data>
+  <data name="UpdateUserFailMsg" xml:space="preserve">
+    <value>User updation failed !</value>
+  </data>
+  <data name="UpdateUserMsg" xml:space="preserve">
+    <value>User updated successfully.</value>
+  </data>
+  <data name="UpdateVendor" xml:space="preserve">
+    <value>Update Vendor</value>
+  </data>
+  <data name="UpdateVendorDetail" xml:space="preserve">
+    <value>Update Vendor Details</value>
+  </data>
+  <data name="UpdateVendorDetails" xml:space="preserve">
+    <value>Delete Vendor Details</value>
+  </data>
+  <data name="UpdateVenLoc" xml:space="preserve">
+    <value>Update Vendor Location</value>
+  </data>
+  <data name="UpdateVenLocDetails" xml:space="preserve">
+    <value>Update Vendor Location Details</value>
+  </data>
+  <data name="Updation" xml:space="preserve">
+    <value>updated successfully</value>
+  </data>
+  <data name="User" xml:space="preserve">
+    <value>User</value>
+  </data>
+  <data name="UsersCreation" xml:space="preserve">
+    <value>Users Creation</value>
+  </data>
+  <data name="UsersDetails" xml:space="preserve">
+    <value>Users Details</value>
+  </data>
+  <data name="UsersDetailsList" xml:space="preserve">
+    <value>Users Details List</value>
+  </data>
+  <data name="UsersList" xml:space="preserve">
+    <value>Users List</value>
+  </data>
+  <data name="Vendor" xml:space="preserve">
+    <value>Vendor</value>
+  </data>
+  <data name="VendorCreateFailMessage" xml:space="preserve">
+    <value>Vendor registration failed !</value>
+  </data>
+  <data name="VendorCreateSuccessMessage" xml:space="preserve">
+    <value>Vendor created and activated successfully.</value>
+  </data>
+  <data name="VendorCreation" xml:space="preserve">
+    <value>Vendor Creation</value>
+  </data>
+  <data name="VendorDelFailMsg" xml:space="preserve">
+    <value>Vendor deletion failed!</value>
+  </data>
+  <data name="VendorDelMsg" xml:space="preserve">
+    <value>Vendor deleted successfully.</value>
+  </data>
+  <data name="VendorList" xml:space="preserve">
+    <value>Vendor List</value>
+  </data>
+  <data name="VendorLocaAddMsg" xml:space="preserve">
+    <value>Vendor location added successfully.</value>
+  </data>
+  <data name="VendorLocaFailMsg" xml:space="preserve">
+    <value>Vendor location registration Failed !</value>
+  </data>
+  <data name="VendorLocaUpdateFailMsg" xml:space="preserve">
+    <value>Vendor location updation failed !</value>
+  </data>
+  <data name="VendorLocaUpdateMsg" xml:space="preserve">
+    <value>Vendor location updated successfully.</value>
+  </data>
+  <data name="VendorNoLicense" xml:space="preserve">
+    <value>Create licensee number for dealers registration !</value>
+  </data>
+  <data name="VendorRegistrationFailed" xml:space="preserve">
+    <value>Vendor registration failed license not updated.</value>
+  </data>
+  <data name="VendorUpdateFailMsg" xml:space="preserve">
+    <value>Vendor updation failed!</value>
+  </data>
+  <data name="VendorUpdateMsg" xml:space="preserve">
+    <value>Vendor updated successfully.</value>
+  </data>
+  <data name="ViewBatchList" xml:space="preserve">
+    <value>View Batch List.</value>
+  </data>
+  <data name="ViewCarDetails" xml:space="preserve">
+    <value>View Car Details</value>
+  </data>
+  <data name="ViewCarList" xml:space="preserve">
+    <value>View car list.</value>
+  </data>
+  <data name="ViewDesign" xml:space="preserve">
+    <value>View Design List</value>
+  </data>
+  <data name="ViewDesignDetails" xml:space="preserve">
+    <value>View Design Details</value>
+  </data>
+  <data name="ViewDetils" xml:space="preserve">
+    <value>Vendor Details</value>
+  </data>
+  <data name="ViewDetilsVendor" xml:space="preserve">
+    <value>View Vendor Details</value>
+  </data>
+  <data name="ViewFilmDetails" xml:space="preserve">
+    <value>view film Details</value>
+  </data>
+  <data name="Viewfilmlist" xml:space="preserve">
+    <value>View film List</value>
+  </data>
+  <data name="ViewMake" xml:space="preserve">
+    <value>View Make Details</value>
+  </data>
+  <data name="ViewModelDetails" xml:space="preserve">
+    <value>View Model Details</value>
+  </data>
+  <data name="ViewModelList" xml:space="preserve">
+    <value>View Model List</value>
+  </data>
+  <data name="ViewModels" xml:space="preserve">
+    <value>View Models</value>
+  </data>
+  <data name="viewroleslist" xml:space="preserve">
+    <value>Roles List</value>
+  </data>
+  <data name="ViewUsersList" xml:space="preserve">
+    <value>View Users List</value>
+  </data>
+  <data name="ViewVendorList" xml:space="preserve">
+    <value>View Vendor List.</value>
+  </data>
+  <data name="ViewVendorLoc" xml:space="preserve">
+    <value>Vendor View Location</value>
+  </data>
+  <data name="ViewVendorLocList" xml:space="preserve">
+    <value>Vendor Location List</value>
+  </data>
+  <data name="ViewVenLocDetails" xml:space="preserve">
+    <value>View Vendor Location Details</value>
+  </data>
+</root>

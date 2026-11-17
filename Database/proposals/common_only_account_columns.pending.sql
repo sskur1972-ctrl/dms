@@ -1,0 +1,1 @@
+-- Superseded by shared administration. No common columns will be added. See ../32_common_only_identity.sql.

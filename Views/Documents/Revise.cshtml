@@ -1,0 +1,51 @@
+@using DMS.Model.Documents
+@using DMS.Model.Master
+@model ReviseForm
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["PageTitle"] = "Start a revision";
+    ViewData["Section"] = "Documents";
+    var d = (DocumentDetail)ViewBag.document;
+    var ccs = ViewBag.changeControls as List<ChangeControl> ?? new();
+    var reasons = ViewBag.changeReasons as List<string> ?? new();
+}
+<partial name="_AdminPageTitle" />
+
+<div class="row">
+    <div class="col-xl-8">
+        <div class="card">
+            <div class="card-header"><h4 class="card-title mb-0">@d.document_number · @d.title</h4></div>
+            <div class="alert alert-info py-2 m-3 mb-0 small">
+                Revision <strong>@d.current_version_no</strong> stays in force - readable and printable - until the new revision has been
+                reviewed, approved, authorized and made effective. The new revision starts from its content and file. Every document that
+                references @d.document_number is flagged for an impact review.
+            </div>
+            <div class="card-body">
+                <form asp-action="Revise" method="post" class="row g-3" onsubmit="this.querySelector('button[type=submit]').disabled = true;">
+                    <div asp-validation-summary="All" class="text-danger"></div>
+                    <input type="hidden" asp-for="DocumentId" />
+                    <input type="hidden" asp-for="ExpectedRowVersion" />
+                    <div class="col-12">
+                        <label asp-for="ChangeSummary" class="form-label"></label> <span class="text-danger">*</span>
+                        <textarea asp-for="ChangeSummary" class="form-control" rows="4" placeholder="What changes, section by section"></textarea>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="ChangeControlNumber" class="form-label"></label> <span class="text-danger">*</span>
+                        <input asp-for="ChangeControlNumber" class="form-control" list="ccList" autocomplete="off" />
+                        <datalist id="ccList">@foreach (var c in ccs) { <option value="@c.cc_number">@c.title</option> }</datalist>
+                        <div class="form-text">Only a <strong>verified</strong> reference from the Change Control Register opens a revision@(ccs.Count == 0 ? " - none is verified yet; QA verifies it in Administration → Change Control Register" : "").</div>
+                    </div>
+                    <div class="col-md-6">
+                        <label asp-for="Reason" class="form-label"></label> <span class="text-danger">*</span>
+                        <input asp-for="Reason" class="form-control" list="reasonList" autocomplete="off" />
+                        <datalist id="reasonList">@foreach (var r in reasons) { <option value="@r"></option> }</datalist>
+                    </div>
+                    <div class="col-12 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary"><i class="ri-git-branch-line me-1"></i> Start the revision</button>
+                        <a class="btn btn-light" asp-action="Details" asp-route-id="@d.id">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

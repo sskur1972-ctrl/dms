@@ -1,0 +1,60 @@
+@using DMS.Model.Documents
+@model AuditReviewForm
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["PageTitle"] = "Record Audit Trail Review";
+    ViewData["Section"] = "Compliance";
+    var status = ViewBag.status as AuditStatus;
+    long rowCount = ViewBag.rowCount is long n ? n : 0;
+}
+<partial name="_AdminPageTitle" />
+
+<div class="row">
+    <div class="col-xl-8">
+        <div class="card">
+            <div class="card-body">
+                <form asp-action="Review" method="post" autocomplete="off">
+                    <input type="hidden" asp-for="Actor" /><input type="hidden" asp-for="EntityType" /><input type="hidden" asp-for="AuditAction" />
+                    <input type="hidden" asp-for="DocumentId" /><input type="hidden" asp-for="Q" />
+                    <div class="row g-3">
+                        <div class="col-md-4"><label class="form-label">Review type</label>
+                            <select class="form-select" asp-for="ReviewType">
+                                <option value="PERIODIC">Periodic review</option><option value="DOCUMENT">Review of one document's trail</option>
+                                <option value="EVENT">Event-driven (deviation, incident)</option><option value="INSPECTION">For an inspection / audit</option>
+                            </select></div>
+                        <div class="col-md-4"><label class="form-label">From (local date)</label><input class="form-control" type="date" asp-for="From" required /></div>
+                        <div class="col-md-4"><label class="form-label">To (local date)</label><input class="form-control" type="date" asp-for="To" required /></div>
+                        <div class="col-12">
+                            <div class="alert alert-info small mb-0">
+                                The filter shown on the search page matches <strong>@rowCount.ToString("N0")</strong> entries in this period
+                                @if (!string.IsNullOrEmpty(Model.Actor) || !string.IsNullOrEmpty(Model.EntityType) || !string.IsNullOrEmpty(Model.AuditAction) || Model.DocumentId != null || !string.IsNullOrEmpty(Model.Q))
+                                { <text>(user @Model.Actor, type @Model.EntityType, action @Model.AuditAction@(Model.DocumentId != null ? ", document #" + Model.DocumentId : ""), text @Model.Q)</text> }.
+                                The count is taken again, and the hash chain verified, when the review is recorded.
+                                <a asp-action="Index" asp-route-From="@Model.From?.ToString("yyyy-MM-dd")" asp-route-To="@Model.To?.ToString("yyyy-MM-dd")" asp-route-Actor="@Model.Actor"
+                                   asp-route-EntityType="@Model.EntityType" asp-route-AuditAction="@Model.AuditAction" asp-route-DocumentId="@Model.DocumentId" asp-route-Q="@Model.Q">Look at the entries</a>
+                            </div>
+                        </div>
+                        <div class="col-12"><label class="form-label">Findings</label>
+                            <textarea class="form-control" asp-for="Findings" rows="5" required minlength="10" placeholder="What was looked at, what was found (e.g. unexpected changes, failed logins, signature exceptions), actions raised - or &quot;No discrepancies found&quot;."></textarea></div>
+                        <div class="col-md-6"><label class="form-label">Your user ID</label><input class="form-control" name="SignatureUserName" value="@ViewBag.userName" /></div>
+                        <div class="col-md-6"><label class="form-label">Password</label><input class="form-control" name="SignaturePassword" type="password" autocomplete="new-password" required /></div>
+                    </div>
+                    <div class="mt-3 d-flex gap-2">
+                        <button type="submit" class="btn btn-primary"><i class="ri-quill-pen-line me-1"></i> Record the review</button>
+                        <a class="btn btn-light" asp-action="Reviews">Cancel</a>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-4">
+        <div class="card"><div class="card-body small">
+            @if (status?.last_review_at != null)
+            {
+                <p>The last periodic review was recorded on <strong>@status.last_review_at?.ToString("dd-MMM-yyyy")</strong> and covered the trail up to
+                    @status.last_reviewed_to?.ToString("dd-MMM-yyyy HH:mm") UTC; this review starts there.</p>
+            }
+            <p class="mb-0 text-muted">A recorded review cannot be changed or deleted. It is attributed to you after you re-enter your password.</p>
+        </div></div>
+    </div>
+</div>

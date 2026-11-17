@@ -1,0 +1,105 @@
+@using DMS.Model.Documents
+@using DMS.Web.Services.Authoring
+@using DMS.Web.Services.Export
+@model AuditIndexViewModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["PageTitle"] = "Audit Trail Review";
+    ViewData["Section"] = "Compliance";
+    var f = Model.Filter;
+    var pages = (int)Math.Ceiling(Model.Total / (double)f.PageSize);
+    var route = new Dictionary<string, string?>
+    {
+        ["Scope"] = f.Scope, ["From"] = f.From?.ToString("yyyy-MM-dd"), ["To"] = f.To?.ToString("yyyy-MM-dd"), ["Actor"] = f.Actor, ["EntityType"] = f.EntityType,
+        ["AuditAction"] = f.AuditAction, ["DocumentId"] = f.DocumentId?.ToString(), ["Q"] = f.Q, ["PageSize"] = f.PageSize.ToString()
+    };
+    Dictionary<string, string?> With(string key, string? value) { var r = new Dictionary<string, string?>(route) { [key] = value }; return r; }
+    var s = Model.Status;
+    var report = AuditReportBuilder.Build(Model.Rows, f, User.Identity?.Name ?? "User", DateTime.UtcNow);
+}
+<partial name="_AdminPageTitle" />
+<link rel="stylesheet" href="~/css/audit-report.css" asp-append-version="true" />
+<div class="audit-report-heading"><div><h5>Document audit trail</h5><p>Recorded value changes, lifecycle decisions and electronic signatures</p></div><div class="audit-report-meta">@Model.Total.ToString("N0") events · Newest first</div></div>
+
+<div class="row">
+    <div class="col-xl-12">
+        <div class="card">
+            <div class="card-header">
+                <form method="get" class="row g-2 align-items-end">
+<div class="col-12"><label class="form-label small mb-0">Report scope</label><select class="form-select form-select-sm" name="Scope"><option value="DOCUMENT" selected="@(f.Scope=="DOCUMENT")">Document changes and workflow</option><option value="ALL" selected="@(f.Scope=="ALL")">All business activity, including access logs</option></select></div>
+                    <div class="col-sm-6 col-lg-2"><label class="form-label small mb-0">From (local)</label><input class="form-control form-control-sm" type="date" name="From" value="@f.From?.ToString("yyyy-MM-dd")" /></div>
+                    <div class="col-sm-6 col-lg-2"><label class="form-label small mb-0">To (local)</label><input class="form-control form-control-sm" type="date" name="To" value="@f.To?.ToString("yyyy-MM-dd")" /></div>
+                    <div class="col-sm-6 col-lg-2"><label class="form-label small mb-0">User</label><input class="form-control form-control-sm" name="Actor" value="@f.Actor" placeholder="user ID or name" /></div>
+                    <div class="col-sm-6 col-lg-2"><label class="form-label small mb-0">Record type</label>
+                        <select class="form-select form-select-sm" name="EntityType"><option value="">All</option>
+                            @foreach (var v in Model.FilterValues.Where(x => x.kind == "ENTITY")) { <option value="@v.value" selected="@(v.value == f.EntityType)">@v.value (@v.uses)</option> }
+                        </select></div>
+                    <div class="col-sm-6 col-lg-2"><label class="form-label small mb-0">Action</label>
+                        <select class="form-select form-select-sm" name="AuditAction"><option value="">All</option>
+                            @foreach (var v in Model.FilterValues.Where(x => x.kind == "ACTION")) { <option value="@v.value" selected="@(v.value == f.AuditAction)">@v.value (@v.uses)</option> }
+                        </select></div>
+                    <div class="col-sm-6 col-lg-2"><label class="form-label small mb-0">Text</label><input class="form-control form-control-sm" name="Q" value="@f.Q" placeholder="detail, key, reason" /></div>
+                    @if (f.DocumentId != null) { <input type="hidden" name="DocumentId" value="@f.DocumentId" /> }
+                    <div class="col-12 d-flex flex-wrap gap-2">
+                        <button class="btn btn-sm btn-primary" type="submit"><i class="ri-search-line"></i> Search</button>
+                        <a class="btn btn-sm btn-light" asp-action="Index">Reset</a>
+                        @if (f.DocumentId != null) { <span class="badge bg-info-subtle text-info align-self-center">document #@f.DocumentId only <a asp-action="Index" asp-all-route-data='@(With("DocumentId", null))'>×</a></span> }
+                        <span class="flex-grow-1"></span>
+                        @if (Model.CanExport)
+                        {
+                            <a class="btn btn-sm btn-soft-success" asp-action="Export" asp-all-route-data='@(With("format", "xlsx"))'><i class="ri-file-excel-2-line"></i> Excel</a>
+                            <a class="btn btn-sm btn-soft-secondary" asp-action="Export" asp-all-route-data='@(With("format", "csv"))'>CSV</a>
+                        }
+                        @if (Model.CanReview)
+                        {
+                            <a class="btn btn-sm btn-soft-primary" asp-action="Review" asp-all-route-data="route"><i class="ri-quill-pen-line"></i> Record a review of this</a>
+                        }
+                    </div>
+                </form>
+            </div>
+            <div class="card-body">
+                <p class="small text-muted">Old and new values show recorded changes only. Missing historical evidence is marked explicitly. Entries are retained in the underlying audit trail.</p>
+                @foreach(var sheet in report.Sheets)
+                {
+                    <section class="audit-report-section">
+                        <header><h6>@sheet.Title <span class="text-muted small">(@sheet.Rows.Count rows on this page)</span></h6></header>
+                        @await Html.PartialAsync("~/Views/AuditReview/_ReportTable.cshtml",sheet)
+                    </section>
+                }
+                @if (pages > 1)
+                {
+                    <nav class="mt-2"><ul class="pagination pagination-sm mb-0 flex-wrap">
+                        @for (var p = Math.Max(1, f.Page - 4); p <= Math.Min(pages, f.Page + 4); p++)
+                        {
+                            <li class="page-item @(p == f.Page ? "active" : "")"><a class="page-link" asp-action="Index" asp-all-route-data='@(With("Page", p.ToString()))'>@p</a></li>
+                        }
+                        <li class="page-item disabled"><span class="page-link">of @pages</span></li>
+                    </ul></nav>
+                }
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-12">
+        <div class="card">
+            <div class="card-header"><h6 class="card-title mb-0">Integrity</h6></div>
+            <div class="card-body small">
+                <p>@s?.total_rows.ToString("N0") entries in the trail.</p>
+                <form asp-action="Verify" method="post"><button class="btn btn-sm btn-outline-primary w-100" type="submit"><i class="ri-shield-check-line"></i> Verify audit integrity</button></form>
+                <p class="text-muted mt-2 mb-0">Checks whether any audit entry has been altered.</p>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header d-flex"><h6 class="card-title mb-0 flex-grow-1">Periodic review</h6><a class="small" asp-action="Reviews">All reviews</a></div>
+            <div class="card-body small">
+                @if (s?.last_review_at == null) { <p class="text-warning mb-0">No periodic review has been recorded yet.</p> }
+                else
+                {
+                    <p class="mb-1">Last review: <strong>@s.last_review_at?.ToString("dd-MMM-yyyy")</strong> (UTC), chain @(s.last_review_chain_ok == true ? "verified" : "BROKEN")</p>
+                    <p class="mb-0">@s.rows_since_last_review.ToString("N0") entries written since the reviewed period.</p>
+                }
+            </div>
+        </div>
+    </div>
+</div>
+
+

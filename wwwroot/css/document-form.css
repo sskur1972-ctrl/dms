@@ -1,0 +1,4 @@
+.dms-document-form .form-label{min-height:20px;margin-bottom:6px}
+.dms-document-form .form-control,.dms-document-form .form-select,.dms-document-form .choices__inner{min-height:38px}
+.dms-document-form .choices{margin-bottom:0}.dms-document-form .choices__inner{border-radius:4px;background:white;font-size:inherit;padding:5px 8px}
+.dms-document-form .choices__list--dropdown{z-index:20}.dms-document-form #numberPreview{overflow-wrap:anywhere}

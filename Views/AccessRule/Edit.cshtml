@@ -1,0 +1,95 @@
+@using DMS.Model.Master
+@using DMS.Model.Account
+@model AccessRule
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["PageTitle"] = "Access Rule";
+    var types = ViewBag.types as List<DocumentType> ?? new List<DocumentType>();
+    var roles = ViewBag.roles as List<RoleDropDownViewModel> ?? new List<RoleDropDownViewModel>();
+    var states = ViewBag.states as List<DocumentState> ?? new List<DocumentState>();
+    bool existing = Model.id > 0;
+}
+<partial name="_AdminPageTitle" />
+
+<div class="row">
+    <div class="col-xl-12">
+        <div class="card">
+            <div class="card-header"><h4 class="card-title mb-0">@(existing ? $"Access rule - {Model.role_name} / {Model.state_name} / {Model.document_type_code ?? "all types"}" : "New access rule")</h4></div>
+            <div class="alert alert-warning py-2 m-3 mb-0" role="alert" style="font-size: 14px;">
+                ⚠ Saving an existing role / state / type combination replaces its rights. This is a GxP configuration change: the reason is recorded in the audit trail.
+            </div>
+            <div class="card-body">
+                <form asp-action="Edit" method="post" class="row g-3" onsubmit="return checkReason()">
+                    <div class="form-group col-xl-4 mb-3">
+                        <label class="form-label">Role</label> <span style="color: red;">*</span>
+                        <select name="role_id" class="form-select" required>
+                            <option value="">-- Select --</option>
+                            @foreach (var r in roles)
+                            {
+                                <option value="@r.RoleId" selected="@(Model.role_id == r.RoleId)">@r.role_name</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group col-xl-4 mb-3">
+                        <label class="form-label">Document State</label> <span style="color: red;">*</span>
+                        <select name="state_id" class="form-select" required>
+                            <option value="">-- Select --</option>
+                            @foreach (var s in states)
+                            {
+                                <option value="@s.id" selected="@(Model.state_id == s.id)">@s.name (@s.code)</option>
+                            }
+                        </select>
+                    </div>
+                    <div class="form-group col-xl-4 mb-3">
+                        <label class="form-label">Document Type</label>
+                        <select name="document_type_id" class="form-select">
+                            <option value="">All types</option>
+                            @foreach (var t in types)
+                            {
+                                <option value="@t.id" selected="@(Model.document_type_id == t.id)">@t.code - @t.name</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="col-xl-6">
+                        <h6 class="text-muted text-uppercase mb-2">Document</h6>
+                        <div class="form-check mb-2"><input class="form-check-input" asp-for="can_view" /><label class="form-check-label" asp-for="can_view"></label></div>
+                        <div class="form-check mb-2"><input class="form-check-input" asp-for="can_view_content" /><label class="form-check-label" asp-for="can_view_content"></label></div>
+                        <div class="form-check mb-2"><input class="form-check-input" asp-for="can_comment" /><label class="form-check-label" asp-for="can_comment"></label></div>
+                        <div class="form-check mb-2"><input class="form-check-input" asp-for="can_create" /><label class="form-check-label" asp-for="can_create"></label></div>
+                        <div class="form-check mb-2"><input class="form-check-input" asp-for="can_edit" /><label class="form-check-label" asp-for="can_edit"></label></div>
+                        <div class="form-check mb-2"><input class="form-check-input" asp-for="can_author" /><label class="form-check-label" asp-for="can_author"></label></div>
+                        <div class="form-check mb-2"><input class="form-check-input" asp-for="can_upload" /><label class="form-check-label" asp-for="can_upload"></label></div>
+                    </div>
+                    <div class="col-xl-6">
+                        <h6 class="text-muted text-uppercase mb-2">Output / screen</h6>
+                        <div class="form-check mb-2"><input class="form-check-input" asp-for="can_print" /><label class="form-check-label" asp-for="can_print"></label></div>
+                        <div class="form-check mb-2"><input class="form-check-input" asp-for="can_export" /><label class="form-check-label" asp-for="can_export"></label></div>
+                        <div class="form-check mb-2"><input class="form-check-input" asp-for="allow_screen_capture" /><label class="form-check-label" asp-for="allow_screen_capture"></label></div>
+                        <div class="form-check mb-2"><input class="form-check-input" asp-for="apply_screen_watermark" /><label class="form-check-label" asp-for="apply_screen_watermark"></label></div>
+                        <small class="text-muted">Print here only allows a controlled-print request; the print itself still needs authorization.</small>
+                    </div>
+
+                    <div class="form-group col-xl-12 mb-3">
+                        <label class="form-label" for="reason">Reason for change</label> <span style="color: red;">*</span>
+                        <textarea id="reason" name="reason" class="form-control" rows="2" maxlength="1000" required></textarea>
+                        <span id="reason_error" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <div class="text-end">
+                            <a asp-action="Index" asp-route-documentTypeId="@Model.document_type_id" class="btn btn-primary ms-2">Back To List</a>
+                            <button type="submit" class="btn btn-success">Save</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    function checkReason() {
+        var ok = document.getElementById('reason').value.trim().length >= 3;
+        document.getElementById('reason_error').textContent = ok ? '' : 'Please enter the reason for this change.';
+        return ok;
+    }
+</script>

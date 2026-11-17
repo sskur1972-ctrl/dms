@@ -1,0 +1,73 @@
+﻿@using DMS.Model.Account
+@model users
+
+
+<div class="row m-3">
+    <div class="col-xl-12">
+        <div class="card">
+    <div class="card-header">
+        <h4 class="card-title">View User</h4>
+    </div>
+    <div class="card-body">
+            <form class="row g-3 needs-validation" novalidate>
+                <div class="card">
+                    <div class="card-body">
+                        <div class="form-row row">
+                          @*   <div class="form-group col-xl-6  mb-4">
+                                <input hidden asp-for="pk_user" />
+                                <label asp-for="username" class="form-label" autocomplete="off"></label>
+                                <input asp-for="username" required class="form-control" disabled placeholder="Enter User Name" />
+                                <span id="username_error" class="text-danger"></span>
+
+                            </div> *@
+                                <div class="form-group col-xl-6  mb-4">
+                                    <label asp-for="emailid" class="form-label"></label>
+                                    <input type="email" disabled asp-for="emailid" class="form-control" required placeholder="Enter Email ID" />
+                                    <span id="email_error" class="text-danger"></span>
+
+                                </div>
+                            <div class="form-group col-xl-6  mb-4">
+                                <label asp-for="mobilenumber" class="form-label" autocomplete="off"></label>
+                                <input asp-for="mobilenumber" disabled required class="form-control numeric" min="10" maxlength="10" placeholder="Enter Mobile Number" />
+                                <span id="mobilenumber_error" class="text-danger"></span>
+
+                            </div>
+                         
+                            <div class="form-group col-xl-6  mb-4">
+                                <label asp-for="DisplayName" class="form-label"></label>
+                                <input asp-for="DisplayName" disabled class="form-control" required placeholder="Enter Employee Name" />
+                                <span id="displayname_error" class="text-danger"></span>
+
+                            </div>
+
+                            <div class="form-group col-xl-6  mb-4">
+                                <label asp-for="address" class="form-label"></label>
+                                <input asp-for="address" disabled class="form-control" required placeholder="Enter Address" />
+                                <span id="address_error" class="text-danger"></span>
+
+                            </div>
+                               
+
+                            <div class="form-group col-xl-6  mb-4">
+
+                                <label asp-for="role_id" class="form-label"></label>
+                                @Html.DropDownListFor(M => M.role_id, new SelectList(ViewBag.RoleList, "RoleId", "role_name"), "Select Role", new { @class = "dropdown form-control wide", @required = "true", @validate = "true", @disabled = "disabled" })
+                                <span id="role_error" class="text-danger"></span>
+
+                            </div>
+                        </div>
+
+                        <div class="mt-4">
+                                <div class="text-end">
+
+                                    <a asp-action="Index" class="btn btn-primary">Back to List</a>
+                        </div>  </div>
+                    </div>
+                </div>
+            </form>
+
+    </div>
+
+    </div>
+    </div>
+</div>

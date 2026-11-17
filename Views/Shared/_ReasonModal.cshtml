@@ -1,0 +1,74 @@
+@* Phase 2 - shared confirmation / reason-for-change dialog.
+   A button opens it with:  onclick="openReasonModal(this)"
+     data-url      action to post to
+     data-fields   JSON object of hidden fields, e.g. {"id":5,"isActive":false}
+     data-title    dialog title
+     data-text     explanation shown above the input
+     data-input    name of the text field (default "reason"); "none" = confirmation only
+     data-label    label of the text field (default "Reason for change")
+     data-required "false" = the text is optional
+*@
+<div class="modal fade" id="reasonModal" tabindex="-1" aria-hidden="true">
+    <div class="modal-dialog modal-dialog-centered">
+        <div class="modal-content">
+            <form id="reasonForm" method="post">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="reasonModalTitle">Reason for change</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+                </div>
+                <div class="modal-body">
+                    <p id="reasonModalText" class="text-muted mb-3"></p>
+                    <div id="reasonModalFields"></div>
+                    <div id="reasonModalInputGroup">
+                        <label class="form-label" for="reasonModalInput"><span id="reasonModalLabel">Reason for change</span> <span id="reasonModalStar" style="color: red;">*</span></label>
+                        <textarea class="form-control" id="reasonModalInput" name="reason" rows="3" maxlength="1000"></textarea>
+                        <span id="reasonModalError" class="text-danger"></span>
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancel</button>
+                    <button type="submit" class="btn btn-success">Confirm</button>
+                </div>
+            </form>
+        </div>
+    </div>
+</div>
+<script>
+    function openReasonModal(button) {
+        var d = button.dataset;
+        var form = document.getElementById('reasonForm');
+        form.action = d.url;
+        var fields = document.getElementById('reasonModalFields');
+        fields.innerHTML = '';
+        var values = d.fields ? JSON.parse(d.fields) : {};
+        Object.keys(values).forEach(function (key) {
+            var input = document.createElement('input');
+            input.type = 'hidden';
+            input.name = key;
+            input.value = values[key] === null ? '' : String(values[key]);
+            fields.appendChild(input);
+        });
+        document.getElementById('reasonModalTitle').textContent = d.title || 'Confirm';
+        document.getElementById('reasonModalText').textContent = d.text || '';
+        var noInput = d.input === 'none';
+        var textarea = document.getElementById('reasonModalInput');
+        document.getElementById('reasonModalInputGroup').style.display = noInput ? 'none' : '';
+        textarea.disabled = noInput;
+        textarea.name = noInput ? '' : (d.input || 'reason');
+        textarea.value = '';
+        textarea.dataset.required = (!noInput && d.required !== 'false') ? '1' : '0';
+        document.getElementById('reasonModalLabel').textContent = d.label || 'Reason for change';
+        document.getElementById('reasonModalStar').style.display = textarea.dataset.required === '1' ? '' : 'none';
+        document.getElementById('reasonModalError').textContent = '';
+        bootstrap.Modal.getOrCreateInstance(document.getElementById('reasonModal')).show();
+    }
+    document.addEventListener('DOMContentLoaded', function () {
+        document.getElementById('reasonForm').addEventListener('submit', function (e) {
+            var textarea = document.getElementById('reasonModalInput');
+            if (textarea.dataset.required === '1' && textarea.value.trim().length < 3) {
+                e.preventDefault();
+                document.getElementById('reasonModalError').textContent = 'Please enter the reason (at least 3 characters).';
+            }
+        });
+    });
+</script>

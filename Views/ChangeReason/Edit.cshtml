@@ -1,0 +1,50 @@
+@using DMS.Model.Master
+@model ChangeReason
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["PageTitle"] = Model.id > 0 ? "Edit Reason for Change" : "Add Reason for Change";
+}
+<partial name="_AdminPageTitle" />
+
+<div class="row">
+    <div class="col-xl-12">
+        <div class="card">
+            <div class="card-header"><h4 class="card-title mb-0">@ViewData["PageTitle"]</h4></div>
+            <div class="alert alert-warning py-2 m-3 mb-0" role="alert" style="font-size: 14px;">
+                ⚠ Fields marked <span style="color: red;">*</span> are required. The wording is shown to authors exactly as entered.
+            </div>
+            <div class="card-body">
+                <form asp-action="Edit" method="post" class="row g-3">
+                    <input type="hidden" asp-for="id" />
+                    <input type="hidden" asp-for="is_active" />
+                    <div class="form-group col-xl-12 mb-3">
+                        <label asp-for="reason_text" class="form-label"></label> <span style="color: red;">*</span>
+                        <textarea asp-for="reason_text" class="form-control" rows="2" required maxlength="512"></textarea>
+                        <span asp-validation-for="reason_text" class="text-danger"></span>
+                    </div>
+                    <div class="form-group col-xl-3 mb-3">
+                        <label asp-for="reason_code" class="form-label"></label>
+                        <input asp-for="reason_code" class="form-control" maxlength="32" autocomplete="off" />
+                        <span asp-validation-for="reason_code" class="text-danger"></span>
+                    </div>
+                    <div class="form-group col-xl-5 mb-3">
+                        <label asp-for="category" class="form-label"></label>
+                        <input asp-for="category" class="form-control" maxlength="64" autocomplete="off" />
+                        <span asp-validation-for="category" class="text-danger"></span>
+                    </div>
+                    <div class="form-group col-xl-2 mb-3">
+                        <label asp-for="display_order" class="form-label"></label>
+                        <input asp-for="display_order" class="form-control" type="number" autocomplete="off" />
+                        <span asp-validation-for="display_order" class="text-danger"></span>
+                    </div>
+                    <div class="form-group">
+                        <div class="text-end">
+                            <a asp-action="Index" class="btn btn-primary ms-2">Back To List</a>
+                            <button type="submit" class="btn btn-success">Save</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>

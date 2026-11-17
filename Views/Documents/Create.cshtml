@@ -1,0 +1,229 @@
+@using DMS.Model.Documents
+@using DMS.Model.Master
+@using DMS.Model.Account
+@model DocumentCreateViewModel
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["PageTitle"] = "New Document";
+    ViewData["Section"] = "Documents";
+    var types = ViewBag.types as List<DocumentType> ?? new();
+    var departments = ViewBag.departments as List<DepartmentDropDownViewModel> ?? new();
+}
+<partial name="_AdminPageTitle" /><link rel="stylesheet" href="~/css/document-form.css" asp-append-version="true" />
+
+<div class="row">
+    <div class="col-xl-12">
+        <div class="card">
+            <div class="card-header"><h4 class="card-title mb-0">New document</h4></div>
+            <div class="card-body">
+                <form asp-action="Create" method="post" enctype="multipart/form-data" class="row g-3 align-items-start dms-document-form" id="createForm" onsubmit="return checkCreate()">
+                    <div class="form-group col-lg-4 col-md-6 col-12">
+                        <label asp-for="DocumentTypeId" class="form-label"></label> <span style="color: red;">*</span>
+                        <select asp-for="DocumentTypeId" class="form-select" required onchange="refreshOptions()">
+                            <option value="0">-- Select --</option>
+                            @foreach (var t in types)
+                            {
+                                <option value="@t.id">@t.code - @t.name</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="form-group col-lg-4 col-md-6 col-12">
+                        <label asp-for="DepartmentId" class="form-label"></label> <span style="color: red;">*</span>
+                        <select asp-for="DepartmentId" class="form-select" required onchange="refreshOptions()">
+                            <option value="0">-- Select --</option>
+                            @foreach (var d in departments)
+                            {
+                                <option value="@d.id">@d.DisplayText</option>
+                            }
+                        </select>
+                    </div>
+
+                    <div class="form-group col-lg-4 col-md-6 col-12">
+                        <label asp-for="AccessScope" class="form-label">Access Scope</label>
+                        <span style="color: red;">*</span>
+
+                        <select asp-for="AccessScope" class="form-select" required>
+                            <option value="">-- Select --</option>
+                            <option value="PLANT">Plant</option>
+                            <option value="GLOBAL">Global</option>
+                        </select>
+                    </div>
+
+                    <div class="form-group col-lg-4 col-md-6 col-12">
+                        <label class="form-label">Document Number</label>
+                        <div id="numberPreview" class="form-control bg-light fw-semibold">
+                            Select the type and department.
+                        </div>
+                        <small id="numberExplanation" class="text-muted"></small>
+                    </div>
+                    <div class="form-group col-lg-4 col-md-6 col-12" id="manualNumberGroup">
+                        <label asp-for="ManualDocumentNumber" class="form-label"></label> <span id="manualStar" style="color: red; display:none;">*</span>
+                        <input asp-for="ManualDocumentNumber" class="form-control" maxlength="96" autocomplete="off" placeholder="Leave blank to use the automatic number" />
+                    </div>
+                    <div class="form-group col-lg-4 col-md-6 col-12" id="mfnGroup" style="display:none;">
+                        <label asp-for="MasterFormatNumber" class="form-label" id="mfnLabel"></label> <span style="color: red;">*</span>
+                        <input asp-for="MasterFormatNumber" class="form-control" maxlength="96" autocomplete="off" />
+                    </div>
+                    <div class="form-group col-lg-4 col-md-6 col-12">
+                        <label asp-for="ChangeControlNumber" class="form-label"></label> <small id="ccHint" class="text-muted" style="display:none;">(required for this type before a revision)</small>
+                        @await Html.PartialAsync("_ChangeControlPicker", Model.ChangeControlNumber)
+                    </div>
+                    <div class="form-group col-12">
+                        <label asp-for="Title" class="form-label"></label> <span style="color: red;">*</span>
+                        <input asp-for="Title" class="form-control" maxlength="512" required autocomplete="off" />
+                    </div>
+                    <div class="form-group col-md-6 col-12">
+                        <label asp-for="Keywords" class="form-label"></label>
+                        <input asp-for="Keywords" class="form-control" maxlength="1024" placeholder="Comma separated - used by search" />
+                    </div>
+                    <div class="form-group col-md-6 col-12">
+                        <label class="form-label invisible" aria-hidden="true">Training required</label>
+                        <div class="form-check"><input class="form-check-input" asp-for="TrainingRequired" /><label class="form-check-label" asp-for="TrainingRequired"></label></div>
+                    </div>
+                    <div class="form-group col-12">
+                        <label asp-for="Summary" class="form-label"></label>
+                        <textarea asp-for="Summary" class="form-control" rows="2"></textarea>
+                    </div>
+
+                    <div class="col-xl-12">
+                        <h6 class="text-muted text-uppercase mb-2 mt-2">Content</h6>
+                        <div class="form-check"><input class="form-check-input" type="radio" asp-for="AuthoringChoice" value="WRITE" id="chWrite" onchange="showChoice()" /><label class="form-check-label" for="chWrite"><strong>Write it in the application</strong> - using the standard template of this type</label></div>
+                        <div class="form-check"><input class="form-check-input" type="radio" asp-for="AuthoringChoice" value="SCRATCH" id="chScratch" onchange="showChoice()" /><label class="form-check-label" for="chScratch"><strong>Write it in the application</strong> - from scratch (empty document)</label></div>
+                        <div class="form-check"><input class="form-check-input" type="radio" asp-for="AuthoringChoice" value="UPLOAD" id="chUpload" onchange="showChoice()" /><label class="form-check-label" for="chUpload">Upload the authored file (Word Excel PDF)</label></div>
+                        <div class="form-check"><input class="form-check-input" type="radio" asp-for="AuthoringChoice" value="TEMPLATE_FILE" id="chTemplate" onchange="showChoice()" /><label class="form-check-label" for="chTemplate">Start from a template file (copied as revision 00, edit it in the Office editor or replace it)</label></div>
+                        <div class="form-check"><input class="form-check-input" type="radio" asp-for="AuthoringChoice" value="LATER" id="chLater" onchange="showChoice()" /><label class="form-check-label" for="chLater">Create the draft now, add the content later</label></div>
+                        <small id="authorRight" class="text-danger"></small>
+                    </div>
+                    <div class="form-group col-md-6 col-12" id="uploadGroup">
+                        <label class="form-label" for="sourceFile">Document file</label> <span style="color: red;">*</span>
+                        <input type="file" id="sourceFile" name="sourceFile" class="form-control" accept=".docx,.xlsx,application/vnd.openxmlformats-officedocument.wordprocessingml.document,application/vnd.openxmlformats-officedocument.spreadsheetml.sheet" />
+                        <small id="uploadRight" class="text-danger"></small>
+                    </div>
+                    <div class="form-group col-md-6 col-12" id="scratchFormatGroup" style="display:none;">
+                        <label asp-for="ScratchFormat" class="form-label">Empty document type</label>
+                        <select asp-for="ScratchFormat" class="form-select">
+                            <option value="DOCX">Word document (.docx)</option>
+                            <option value="XLSX">Excel workbook (.xlsx)</option>
+                            <option value="XLSX">PDF Document (.pdf)</option>
+                        </select>
+                    </div>
+                    <div class="form-group col-md-6 col-12" id="templateGroup" style="display:none;">
+                        <label asp-for="TemplateId" class="form-label"></label> <span style="color: red;">*</span>
+                        <select asp-for="TemplateId" class="form-select"><option value="">-- Select the type first --</option></select>
+                        <small class="text-muted" id="templateHint">A copy of the template file becomes revision 00 of the draft.</small>
+                    </div>
+
+                    <div class="form-group col-12">
+                        <label class="form-label">Referenced documents</label>
+                        <div class="input-group">
+                            <input id="refSearch" class="form-control" placeholder="Search by number or title and pick from the list" autocomplete="off" list="refOptions" />
+                            <datalist id="refOptions"></datalist>
+                            <button class="btn btn-soft-primary" type="button" onclick="addReference()">Add</button>
+                        </div>
+                        <div id="refList" class="mt-2"></div>
+                    </div>
+
+                    <div id="createRight" class="col-12 text-danger"></div>
+                    <div class="form-group">
+                        <div class="text-end">
+                            <a asp-action="Index" class="btn btn-primary ms-2">Back To List</a>
+                            <button type="submit" class="btn btn-success" id="createBtn">Create Draft</button>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+<script>
+    var refs = {}, lookup = {}, templates = [];
+    function choice() { var c = document.querySelector('input[name="AuthoringChoice"]:checked'); return c ? c.value : 'UPLOAD'; }
+    function fillTemplates() {
+        var c = choice(), sel = document.getElementById('TemplateId'), current = sel.value;
+        var list = templates.filter(function (t) { return c === 'WRITE' ? t.has_body : t.has_file; });
+        sel.innerHTML = '';
+        var first = document.createElement('option');
+        first.value = ''; first.textContent = list.length ? '-- Select --' : (c === 'WRITE' ? 'No editor template for this type - ask QA, or write from scratch' : 'No template file for this type');
+        sel.appendChild(first);
+        list.forEach(function (t) {
+            var op = document.createElement('option'); op.value = t.id; op.textContent = t.text;
+            if (String(t.id) === current) op.selected = true; sel.appendChild(op);
+        });
+        document.getElementById('templateHint').textContent = c === 'WRITE'
+            ? 'The template\'s standard sections open in the editor; the Word file is produced when you save.'
+            : 'A copy of the template file becomes revision 00 of the draft.';
+    }
+    function showChoice() {
+        var c = choice();
+        document.getElementById('uploadGroup').style.display = c === 'UPLOAD' ? '' : 'none';
+        document.getElementById('templateGroup').style.display = (c === 'TEMPLATE_FILE' || c === 'WRITE') ? '' : 'none';
+        document.getElementById('scratchFormatGroup').style.display = (c === 'SCRATCH' || c === 'LATER') ? '' : 'none';
+        fillTemplates();
+    }
+    function refreshOptions() {
+        var type = document.getElementById('DocumentTypeId').value, dept = document.getElementById('DepartmentId').value;
+        if (type === '0' || dept === '0') return;
+        fetch('@Url.Action("CreateOptions")?documentTypeId=' + type + '&departmentId=' + dept, { credentials: 'same-origin' })
+            .then(function (r) { return r.json(); })
+            .then(function (o) {
+                document.getElementById('numberPreview').textContent = o.is_automatic ? o.document_number : 'Entered by hand';
+                document.getElementById('numberExplanation').textContent = o.explanation || '';
+                document.getElementById('manualStar').style.display = o.is_automatic ? 'none' : '';
+                document.getElementById('ManualDocumentNumber').required = !o.is_automatic;
+                document.getElementById('mfnGroup').style.display = o.requires_master_format_number ? '' : 'none';
+                document.getElementById('mfnLabel').textContent = o.master_format_number_label || 'Master Format Number';
+                document.getElementById('ccHint').style.display = o.requires_change_control ? '' : 'none';
+                if (o.requires_training) document.getElementById('TrainingRequired').checked = true;
+                document.getElementById('createRight').textContent = o.can_create ? '' : 'Your access rights do not permit creating a document of this type.';
+                document.getElementById('uploadRight').textContent = o.can_upload ? '' : 'Your access rights do not permit uploading a file for this type.';
+                document.getElementById('createBtn').disabled = !o.can_create;
+                document.getElementById('authorRight').textContent = o.can_author ? '' : 'Your access rights do not permit writing document content for this type.';
+                templates = o.templates || [];
+                fillTemplates();
+            });
+    }
+    document.getElementById('refSearch').addEventListener('input', function () {
+        var v = this.value;
+        if (v.length < 2 || lookup[v]) return;
+        fetch('@Url.Action("Lookup")?q=' + encodeURIComponent(v), { credentials: 'same-origin' })
+            .then(function (r) { return r.json(); })
+            .then(function (items) {
+                var dl = document.getElementById('refOptions'); dl.innerHTML = '';
+                items.forEach(function (i) { lookup[i.text] = i.id; var o = document.createElement('option'); o.value = i.text; dl.appendChild(o); });
+            });
+    });
+    function addReference() {
+        var text = document.getElementById('refSearch').value, id = lookup[text];
+        if (!id || refs[id]) return;
+        refs[id] = text; drawRefs(); document.getElementById('refSearch').value = '';
+    }
+    function removeReference(id) { delete refs[id]; drawRefs(); }
+    function drawRefs() {
+        var box = document.getElementById('refList'); box.innerHTML = '';
+        Object.keys(refs).forEach(function (id, n) {
+            var span = document.createElement('span'); span.className = 'badge bg-light text-dark border me-2 mb-1 p-2';
+            span.textContent = refs[id] + ' ';
+            var x = document.createElement('a'); x.href = 'javascript:void(0)'; x.textContent = '✕'; x.onclick = function () { removeReference(id); };
+            span.appendChild(x);
+            var h = document.createElement('input'); h.type = 'hidden'; h.name = 'ReferencedDocumentIds'; h.value = id;
+            box.appendChild(span); box.appendChild(h);
+        });
+    }
+    function checkCreate() {
+        var c = choice();
+        if (c === 'UPLOAD' && !document.getElementById('sourceFile').value) { Swal.fire('', 'Choose the document file to upload.', 'error'); return false; }
+        if (c === 'UPLOAD' && !/\.(docx|xlsx|pdf)$/i.test(document.getElementById('sourceFile').value)) {
+        Swal.fire('', 'Upload a Word (.docx), Excel (.xlsx), or PDF (.pdf) file.', 'error');
+        return false;
+        }
+        if ((c === 'TEMPLATE_FILE' || c === 'WRITE') && !document.getElementById('TemplateId').value) { Swal.fire('', 'Select the template to start from.', 'error'); return false; }
+        document.getElementById('createBtn').disabled = true; document.getElementById('createBtn').innerText = 'Creating...';
+        return true;
+    }
+    document.addEventListener('DOMContentLoaded', function () {
+        if (!document.querySelector('input[name="AuthoringChoice"]:checked')) document.getElementById('chWrite').checked = true;
+        showChoice(); refreshOptions();
+    });
+</script>
+

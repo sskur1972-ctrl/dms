@@ -1,0 +1,12 @@
+@using DMS.Model.Master
+@using DMS.Web.Services.Intelligence
+@model List<SystemConfigItem>
+@{ViewData["PageTitle"]="AI configuration";Layout="~/Views/Shared/_Layout.cshtml";var status=(AiStatus)ViewBag.Status;}
+<partial name="_AdminPageTitle" />
+<div class="card"><div class="card-body">
+@if(TempData["IntelligenceMessage"] is string notice){<div class="alert alert-info" role="status">@notice</div>}
+<p><strong>@status.Provider / @(string.IsNullOrEmpty(status.Model)?"model not selected":status.Model)</strong> · @(status.Configured?"Configuration present":"Configuration incomplete") · AI review @(status.ModelEnabled?"enabled":"disabled") · RAG @(status.RagEnabled?"enabled":"disabled") · Semantic embeddings @(status.EmbeddingsEnabled?"enabled":"disabled")</p>
+<p>AI settings are managed in <code>application.json</code>, under <code>ai</code>. Select <code>ai.review.provider</code>, configure the selected provider under <code>ai.providers</code>, and restart the application after changes. API keys are not displayed here.</p>
+<div class="d-flex flex-wrap gap-2 mb-3"><form asp-action="TestProvider" method="post"><button class="btn btn-outline-primary">Test review model</button></form><form asp-action="TestProvider" method="post"><input type="hidden" name="embeddings" value="true" /><button class="btn btn-outline-primary" disabled="@(!status.EmbeddingsEnabled)">Test embeddings</button></form><form asp-action="BuildEmbeddings" method="post"><button class="btn btn-light" disabled="@(!status.EmbeddingsEnabled)">Process embedding batch</button></form><a class="btn btn-light" asp-action="References">Manage references</a><a class="btn btn-light" asp-action="Index">Back</a></div>
+<p>Connection tests use synthetic text. OpenAI and DeepSeek require their own API keys and an API account with available credits. RAG uses ranked text retrieval while embeddings are disabled.</p>
+</div></div>

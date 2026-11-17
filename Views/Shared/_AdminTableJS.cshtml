@@ -1,0 +1,18 @@
+@* Phase 2 - DataTable set-up used by the Administration list screens.
+   Call initAdminTable('#assetlist', [0,1,2], [[0,'asc']]) - the export columns and the initial order. *@
+<partial name="_DataTableJS" />
+<script>
+    function initAdminTable(selector, exportColumns, order) {
+        return new DataTable(selector, {
+            pagingType: 'full_numbers',
+            displayLength: 25,
+            dom: 'Bfrtip',
+            buttons: [
+                { extend: 'print', exportOptions: { columns: exportColumns } },
+                { extend: 'excel', exportOptions: { columns: exportColumns } }
+            ],
+            columnDefs: [{ targets: 'not-export-col', orderable: false }],
+            order: order || [[0, 'asc']]
+        });
+    }
+</script>

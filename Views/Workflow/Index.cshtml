@@ -1,0 +1,125 @@
+@using DMS.Model.Master
+@model List<WorkflowStage>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["PageTitle"] = "Workflow Configuration";
+    var types = ViewBag.types as List<DocumentType> ?? new List<DocumentType>();
+    var selected = ViewBag.selectedType as DocumentType;
+}
+<partial name="_AdminPageTitle" />
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-header border-0">
+                <div class="row g-3 align-items-center">
+                    <div class="col-sm-4">
+                        <form method="get" asp-action="Index">
+                            <label class="form-label mb-1">Document Type</label>
+                            <select name="documentTypeId" class="form-select" onchange="this.form.submit()">
+                                @foreach (var t in types)
+                                {
+                                    <option value="@t.id" selected="@(selected?.id == t.id)">@t.code - @t.name</option>
+                                }
+                            </select>
+                        </form>
+                    </div>
+                    <div class="col-sm text-muted small">
+                        @if (selected != null)
+                        {
+                            <span>Routing <strong>@selected.routing_mode.ToLowerInvariant()</strong> · default SLA @selected.default_sla_days days · change control @(selected.requires_change_control ? "required" : "optional") · training @(selected.requires_training ? "required" : "not required")</span>
+                        }
+                    </div>
+                    <div class="col-sm-auto ms-auto">
+                        <div class="hstack gap-2">
+                            <a class="btn btn-soft-primary" asp-action="Transitions"><i class="ri-git-merge-line align-bottom me-1"></i> State Transitions</a>
+                            <a class="btn btn-soft-primary" asp-action="States"><i class="ri-list-check align-bottom me-1"></i> Document States</a>
+                            @if (selected != null)
+                            {
+                                <a class="btn btn-danger add-btn" asp-action="EditStage" asp-route-id="0" asp-route-documentTypeId="@selected.id"><i class="ri-add-line align-bottom me-1"></i> Add Stage</a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <p class="text-muted">Stages run in order of Stage No. A stage that has been used by a document cannot be deleted (it is evidence of how that document was approved) - uncheck Active instead. Every change requires a reason and is recorded in the audit trail.</p>
+                <div class="table-responsive">
+                    <table class="table align-middle table-hover table-bordered">
+                        <thead class="table-light">
+                            <tr>
+                                <th>No</th>
+                                <th>Code</th>
+                                <th>Stage Name</th>
+                                <th>Kind</th>
+                                <th>State</th>
+                                <th>Department</th>
+                                <th>Required Role</th>
+                                <th>Default Assignee</th>
+                                <th>Signature Meaning</th>
+                                <th>SLA</th>
+                                <th>Min Appr.</th>
+                                <th>Mandatory</th>
+                                <th>Status</th>
+                                <th>Used</th>
+                                <th width="5%">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @if (Model.Count == 0)
+                            {
+                                <tr><td colspan="15" class="text-center text-muted">No stages are configured for this document type.</td></tr>
+                            }
+                            @foreach (var s in Model.OrderBy(x => x.department_id.HasValue).ThenBy(x => x.stage_no))
+                            {
+                                <tr>
+                                    <td>@s.stage_no</td>
+                                    <td><strong>@s.stage_code</strong></td>
+                                    <td>@s.stage_name</td>
+                                    <td>@s.stage_kind</td>
+                                    <td>@s.state_code</td>
+                                    <td>@(s.department_code ?? "All")</td>
+                                    <td>@(s.required_role_name ?? "Any assigned user")</td>
+                                    <td>@s.default_assignee_name</td>
+                                    <td>@s.signature_meaning</td>
+                                    <td>@s.sla_days d</td>
+                                    <td>@s.min_approvals</td>
+                                    <td>@(s.is_mandatory ? "Yes" : "No")</td>
+                                    <td>
+                                        @if (s.is_active) { <span class="badge bg-success-subtle text-success">Active</span> }
+                                        else { <span class="badge bg-danger-subtle text-danger">Inactive</span> }
+                                    </td>
+                                    <td>@s.instance_count</td>
+                                    <td>
+                                        <center>
+                                            <div class="dropdown d-inline-block">
+                                                <button class="btn btn-soft-secondary btn-sm dropdown" type="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="ri-more-fill align-middle"></i></button>
+                                                <ul class="dropdown-menu dropdown-menu-end">
+                                                    <li><a class="dropdown-item" asp-action="EditStage" asp-route-id="@s.id" asp-route-documentTypeId="@s.document_type_id"><i class="ri-pencil-fill align-bottom me-2 text-muted"></i> Edit</a></li>
+                                                    @if (s.instance_count == 0)
+                                                    {
+                                                        <li>
+                                                            <button type="button" class="dropdown-item text-danger" onclick="openReasonModal(this)"
+                                                                    data-url="@Url.Action("DeleteStage")"
+                                                                    data-fields='@Json.Serialize(new { id = s.id, documentTypeId = s.document_type_id })'
+                                                                    data-title="Delete stage @s.stage_code"
+                                                                    data-text="The stage is removed and the following stages are renumbered.">
+                                                                <i class="ri-delete-bin-fill align-bottom me-2"></i> Delete
+                                                            </button>
+                                                        </li>
+                                                    }
+                                                </ul>
+                                            </div>
+                                        </center>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<partial name="_ReasonModal" />

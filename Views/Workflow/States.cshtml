@@ -1,0 +1,45 @@
+@using DMS.Model.Master
+@model List<DocumentState>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["PageTitle"] = "Document States";
+}
+<partial name="_AdminPageTitle" />
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-header border-0">
+                <div class="row g-3 align-items-center">
+                    <div class="col-sm text-muted">The document life-cycle states (read-only - they are fixed by the validated workflow).</div>
+                    <div class="col-sm-auto ms-auto"><a class="btn btn-primary" asp-action="Index">Workflow Stages</a></div>
+                </div>
+            </div>
+            <div class="card-body">
+                <div class="table-responsive">
+                    <table class="table align-middle table-hover table-bordered">
+                        <thead class="table-light">
+                            <tr><th>Order</th><th>Code</th><th>Name</th><th>Description</th><th>Initial</th><th>Editable</th><th>Effective</th><th>Open</th><th>Terminal</th></tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var s in Model)
+                            {
+                                <tr>
+                                    <td>@s.display_order</td>
+                                    <td><span class="badge @(string.IsNullOrEmpty(s.badge_css_class) ? "bg-secondary" : s.badge_css_class)">@s.code</span></td>
+                                    <td>@s.name</td>
+                                    <td>@s.description</td>
+                                    <td>@(s.is_initial ? "Yes" : "")</td>
+                                    <td>@(s.is_editable ? "Yes" : "")</td>
+                                    <td>@(s.is_effective ? "Yes" : "")</td>
+                                    <td>@(s.counts_as_open ? "Yes" : "")</td>
+                                    <td>@(s.is_terminal ? "Yes" : "")</td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

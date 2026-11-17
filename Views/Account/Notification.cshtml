@@ -1,0 +1,272 @@
+﻿
+
+@model List<UserNotificationViewModel>
+
+@using Excise.Model.Account;
+@using Excise.Web.Services;
+@using Newtonsoft.Json;
+@{
+    string username = "";
+    List<string> permissions = null;
+    string _permissionList = string.Empty;
+
+    string rolename = "";
+    string displayname = "";
+    string actionName = string.Empty;
+    int PermissionCount = 0;
+    int VerificationCount = 0;
+
+
+    int storedval = 0;
+    int val = 0;
+    int rejected = 0;
+    int isinitiatior = 0;
+
+}
+
+@{
+    try
+    {
+        @if (User.Identity.IsAuthenticated)
+        {
+            var claimsCount = User.Claims.Count();
+
+            if (claimsCount > 0)
+            {
+                // Retrieve the custom claim value from the user's claims
+                username = User.Identity.Name;
+                displayname = User.Claims.FirstOrDefault(c => c.Type == "displayName")?.Value;
+                rolename = User.Claims.FirstOrDefault(c => c.Type == "Roles_Name")?.Value;
+                _permissionList = User.Claims.FirstOrDefault(c => c.Type == "serializedPermissionList")?.Value;
+                VerificationCount = ViewBag.VerificationCount;
+            }
+        }
+
+    }
+    catch (Exception ex)
+    {
+        displayname = ex.Message;
+    }
+}
+<partial name="_DataTableCSS" />
+
+
+<!-- start page title -->
+<div class="row">
+    <div class="col-12">
+        <div class="page-title-box d-sm-flex align-items-center justify-content-between">
+            <h4 class="mb-sm-0">Notification</h4>
+            <div class="page-title-right">
+                <ol class="breadcrumb m-0">
+                    <li class="breadcrumb-item"><a asp-controller="Account" asp-action="Notification">Notification</a></li>
+
+                    <li class="breadcrumb-item active">View Notification</li>
+                </ol>
+            </div>
+        </div>
+    </div>
+</div>
+<!-- end page title -->
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card" id="leadsList">
+            <div class="card-body">
+
+
+
+
+
+
+                <form name="frmFilter" id="frmFilter">
+                    <table id="FL2FL3List" class="table dt-responsive responsive align-middle table-hover table-responsive table-bordered" style="width:100%">
+                        <thead class="table-light">
+                            <tr>
+
+
+                                <th>Sender Name</th>
+                                <th hidden>notificationID</th>
+                                <th>Message</th>
+                                <th>Sent Date</th>
+                                <th>Status</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+
+                            @foreach (var obj in Model.OrderByDescending(u => u.notificationID))
+                            {
+
+                                <tr>
+
+                                    <td>@obj.SenderUserName (@obj.SenderRoleName)</td>
+                                    <td hidden>@obj.notificationID</td>
+                                    <td>@obj.message</td>
+                                    <td>@Convert.ToDateTime(@obj.sentDate).ToString("dd-MM-yyyy HH:mm")</td>
+                                    <td>
+                                        @if (@obj.is_Viewed == 0)
+                                        {
+                                            <span class="badge bg-warning">Yet to View</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="badge bg-success">View</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        <div>
+                                            <center>
+                                                <div class="dropdown d-inline-block">
+                                                    <button class="btn btn-soft-secondary btn-sm dropdown" type="button" data-bs-toggle="dropdown" aria-expanded="false">
+                                                        <i class="ri-more-fill align-middle"></i>
+                                                    </button>
+                                                    <ul class="dropdown-menu dropdown-menu-end" style="position: absolute; z-index: 1100; margin-top: 0; margin-left: -5px;">
+                                                        <li>
+
+
+                                                        <li>
+                                                            <a class="dropdown-item" asp-controller="Account" asp-action="NotificationDetails" asp-route-id="@obj.notificationID">
+                                                                <i class="ri-eye-fill align-bottom me-2 text-muted"></i>View
+                                                            </a>
+                                                        </li>
+                                                        </li>
+
+                                                    </ul>
+                                                </div>
+                                            </center>
+                                        </div>
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </form>
+
+
+
+
+
+            </div>
+        </div>
+    </div>
+</div>
+
+<!--end row-->
+<partial name="_DataTableJS" />
+
+@section scripts {
+    <link href="~/assets/css/datatables.bootstrap5.min.css" rel="stylesheet" />
+    <link href="~/assets/css/buttons.datatables.min.css" rel="stylesheet" />
+    <link href="~/assets/css/responsive.bootstrap.min.css" rel="stylesheet" />
+    <link href="~/assets/libs/sweetalert2/sweetalert2.min.css" rel="stylesheet" type="text/css" />
+
+    <script>
+        $(document).ready(function () {
+            let table = $('#FL2FL3List').DataTable({
+                responsive: true,
+                pagingType: 'full_numbers',
+                displayLength: 10,
+                dom: 'Bfrtip',
+                buttons: [
+                    {
+                        extend: 'print',
+                        exportOptions: {
+                            columns: [0, 1, 2, 3, 4]
+                        }
+                    },
+                    {
+                        extend: 'excel',
+                        exportOptions: {
+                            columns: [0, 1, 2, 3, 4]
+                        }
+                    },
+                ],
+                order: [[0, 'desc']]
+            });
+        });
+    </script>
+
+    <script>
+        function validateDates() {
+            const fromDateInput = document.getElementById('fromdate');
+            const toDateInput = document.getElementById('todate');
+            const fromDateFeedback = document.getElementById('fromdateFeedback');
+            const toDateFeedback = document.getElementById('todateFeedback');
+
+            // Clear previous feedback messages
+            fromDateFeedback.textContent = '';
+            toDateFeedback.textContent = '';
+
+            const fromDate = new Date(fromDateInput.value);
+            const toDate = new Date(toDateInput.value);
+
+            let valid = true;
+
+            // Check if the From date is empty
+            if (!fromDateInput.value) {
+                fromDateFeedback.textContent = 'Start date is required.';
+                fromDateInput.classList.add('is-invalid');
+                valid = false;
+            } else {
+                fromDateInput.classList.remove('is-invalid');
+            }
+
+            // Check if the To date is empty
+            if (!toDateInput.value) {
+                toDateFeedback.textContent = 'End date is required.';
+                toDateInput.classList.add('is-invalid');
+                valid = false;
+            } else {
+                toDateInput.classList.remove('is-invalid');
+            }
+
+            // Check if the To date is less than the From date
+            if (valid && toDate < fromDate) {
+                toDateFeedback.textContent = 'End date cannot be less than start date.';
+                toDateInput.classList.add('is-invalid');
+                valid = false;
+            } else if (valid) {
+                toDateInput.classList.remove('is-invalid');
+            }
+
+            return valid; // Allow or prevent form submission
+        }
+    </script>
+
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            const form = document.querySelector('form');
+            const fromDateInput = document.getElementById('fromdate');
+            const toDateInput = document.getElementById('todate');
+            const fromDateError = document.getElementById('fromdate-error');
+            const toDateError = document.getElementById('todate-error');
+
+            form.addEventListener('submit', function (event) {
+                const fromDate = new Date(fromDateInput.value);
+                const toDate = new Date(toDateInput.value);
+
+                // Clear previous error messages
+                fromDateError.textContent = '';
+                toDateError.textContent = '';
+
+                if (toDate < fromDate) {
+                    event.preventDefault();
+                    toDateError.textContent = "The end date must be greater than or equal to the start date.";
+                }
+            });
+
+            fromDateInput.addEventListener('input', function () {
+                fromDateError.textContent = '';
+                toDateError.textContent = '';
+            });
+
+            toDateInput.addEventListener('input', function () {
+                toDateError.textContent = '';
+            });
+        });
+    </script>
+
+
+
+}

@@ -1,0 +1,96 @@
+@using DMS.Model.Master
+@model List<DocumentType>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["PageTitle"] = "Document Types";
+    bool canEdit = ViewBag.canEdit == true;
+    bool canNumbering = ViewBag.canNumbering == true;
+}
+<partial name="_DataTableCSS" />
+<partial name="_AdminPageTitle" />
+
+<div class="row">
+    <div class="col-lg-12">
+        <div class="card">
+            <div class="card-header border-0">
+                <div class="row g-4 align-items-center">
+                    <div class="col-sm"><p class="text-muted mb-0">Document types drive numbering, workflow routing, periodic review and retention. Changes are GxP configuration changes and need a reason.</p></div>
+                    <div class="col-sm-auto ms-auto">
+                        <div class="hstack gap-2">
+                            @if (canNumbering)
+                            {
+                                <a class="btn btn-soft-primary" asp-action="NumberingRules"><i class="ri-hashtag align-bottom me-1"></i> Numbering Rules</a>
+                            }
+                            @if (canEdit)
+                            {
+                                <a class="btn btn-danger add-btn" asp-action="Edit" asp-route-id="0"><i class="ri-add-line align-bottom me-1"></i> Add Document Type</a>
+                            }
+                        </div>
+                    </div>
+                </div>
+            </div>
+            <div class="card-body">
+                <table id="assetlist" class="table nowrap dt-responsive align-middle table-hover table-bordered" style="width:100%">
+                    <thead class="table-light">
+                        <tr>
+                            <th>Order</th>
+                            <th>Code</th>
+                            <th>Name</th>
+                            <th>Category</th>
+                            <th>Routing</th>
+                            <th>Change Control</th>
+                            <th>Review (months)</th>
+                            <th>Stages</th>
+                            <th>Documents</th>
+                            <th>Status</th>
+                            <th width="5%" class="not-export-col">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var item in Model)
+                        {
+                            <tr>
+                                <td>@item.display_order</td>
+                                <td><strong>@item.code</strong></td>
+                                <td>@item.name</td>
+                                <td>@item.category</td>
+                                <td>@item.routing_mode</td>
+                                <td>@(item.requires_change_control ? "Required" : "Optional")</td>
+                                <td>@item.periodic_review_months</td>
+                                <td>@item.stage_count</td>
+                                <td>@item.document_count</td>
+                                <td>
+                                    @if (item.is_active) { <span class="badge bg-success-subtle text-success">Active</span> }
+                                    else { <span class="badge bg-danger-subtle text-danger">Inactive</span> }
+                                </td>
+                                <td>
+                                    <center>
+                                        <div class="dropdown d-inline-block">
+                                            <button class="btn btn-soft-secondary btn-sm dropdown" type="button" data-bs-toggle="dropdown" aria-expanded="false"><i class="ri-more-fill align-middle"></i></button>
+                                            <ul class="dropdown-menu dropdown-menu-end">
+                                                @if (canEdit)
+                                                {
+                                                    <li><a class="dropdown-item" asp-action="Edit" asp-route-id="@item.id"><i class="ri-pencil-fill align-bottom me-2 text-muted"></i> Edit</a></li>
+                                                }
+                                                @if (canNumbering)
+                                                {
+                                                    <li><a class="dropdown-item" asp-action="NumberingRules" asp-route-documentTypeId="@item.id"><i class="ri-hashtag align-bottom me-2 text-muted"></i> Numbering</a></li>
+                                                }
+                                                <li><a class="dropdown-item" asp-controller="Workflow" asp-action="Index" asp-route-documentTypeId="@item.id"><i class="ri-flow-chart align-bottom me-2 text-muted"></i> Workflow stages</a></li>
+                                            </ul>
+                                        </div>
+                                    </center>
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<partial name="_AdminTableJS" />
+<script>
+    document.addEventListener('DOMContentLoaded', function () { initAdminTable('#assetlist', [0, 1, 2, 3, 4, 5, 6, 7, 8, 9], [[0, 'asc']]); });
+</script>

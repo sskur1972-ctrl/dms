@@ -1,0 +1,124 @@
+@using DMS.Model.Documents
+@using DMS.Model.Master
+@using DMS.Model.Account
+@model List<DocumentTemplate>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["PageTitle"] = "Document Templates";
+    var types = ViewBag.types as List<DocumentType> ?? new();
+    var departments = ViewBag.departments as List<DepartmentDropDownViewModel> ?? new();
+    bool withdrawn = ViewBag.withdrawn == true;
+}
+<partial name="_DataTableCSS" />
+<partial name="_AdminPageTitle" />
+
+<div class="row">
+    <div class="col-xl-4">
+        <div class="card">
+            <div class="card-header"><h5 class="card-title mb-0">Add a template</h5></div>
+            <div class="card-body">
+                <p class="text-muted small">The controlled blank an author starts a document from. A new version of a template is uploaded as a new row with a higher version number; withdraw the old one.</p>
+                <form asp-action="Upload" method="post" enctype="multipart/form-data">
+                    <div class="mb-2">
+                        <label class="form-label">Document Type</label> <span style="color: red;">*</span>
+                        <select name="documentTypeId" class="form-select" required>
+                            <option value="">-- Select --</option>
+                            @foreach (var t in types) { <option value="@t.id">@t.code - @t.name</option> }
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Department</label>
+                        <select name="departmentId" class="form-select">
+                            <option value="">All departments</option>
+                            @foreach (var d in departments) { <option value="@d.id">@d.DisplayText</option> }
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-8 mb-2"><label class="form-label">Name</label> <span style="color: red;">*</span><input name="name" class="form-control" maxlength="190" required /></div>
+                        <div class="col-4 mb-2"><label class="form-label">Version</label><input name="templateVersion" class="form-control" maxlength="16" value="01" /></div>
+                    </div>
+                    <div class="mb-2"><label class="form-label">Effective from</label><input name="effectiveFrom" type="date" class="form-control" /></div>
+                    <div class="mb-2"><label class="form-label">Template file</label> <span style="color: red;">*</span><input type="file" name="file" class="form-control" accept=".docx,.xlsx,.pptx,.pdf" required /></div>
+                    <div class="mb-2"><label class="form-label">Reason</label> <span style="color: red;">*</span><textarea name="reason" class="form-control" rows="2" required></textarea></div>
+                    <div class="text-end"><button type="submit" class="btn btn-success">Upload</button></div>
+                </form>
+            </div>
+        </div>
+        <div class="card">
+            <div class="card-header"><h5 class="card-title mb-0">Create a template in the application</h5></div>
+            <div class="card-body">
+                <p class="text-muted small">A template with no file: its standard sections, page setup, header and footer are laid out in the editor, and authors choosing "Write it in the application" start from them.</p>
+                <form asp-action="CreateBlank" method="post">
+                    <div class="mb-2">
+                        <label class="form-label">Document Type</label> <span style="color: red;">*</span>
+                        <select name="documentTypeId" class="form-select" required>
+                            <option value="">-- Select --</option>
+                            @foreach (var t in types) { <option value="@t.id">@t.code - @t.name</option> }
+                        </select>
+                    </div>
+                    <div class="mb-2">
+                        <label class="form-label">Department</label>
+                        <select name="departmentId" class="form-select">
+                            <option value="">All departments</option>
+                            @foreach (var d in departments) { <option value="@d.id">@d.DisplayText</option> }
+                        </select>
+                    </div>
+                    <div class="row">
+                        <div class="col-8 mb-2"><label class="form-label">Name</label> <span style="color: red;">*</span><input name="name" class="form-control" maxlength="190" required /></div>
+                        <div class="col-4 mb-2"><label class="form-label">Version</label><input name="templateVersion" class="form-control" maxlength="16" value="01" /></div>
+                    </div>
+                    <div class="mb-2"><label class="form-label">Reason</label> <span style="color: red;">*</span><textarea name="reason" class="form-control" rows="2" required></textarea></div>
+                    <div class="text-end"><button type="submit" class="btn btn-primary">Create and lay out</button></div>
+                </form>
+            </div>
+        </div>
+    </div>
+    <div class="col-xl-8">
+        <div class="card">
+            <div class="card-header border-0 d-flex">
+                <h5 class="card-title mb-0 flex-grow-1">Templates</h5>
+                @if (withdrawn) { <a asp-action="Index" class="btn btn-sm btn-light">Current only</a> }
+                else { <a asp-action="Index" asp-route-withdrawn="true" class="btn btn-sm btn-light">Include withdrawn</a> }
+            </div>
+            <div class="card-body">
+                <table id="assetlist" class="table nowrap dt-responsive align-middle table-hover table-bordered" style="width:100%">
+                    <thead class="table-light">
+                        <tr><th>Type</th><th>Name</th><th>Ver</th><th>Department</th><th>Offered as</th><th>File</th><th>Effective</th><th>Status</th><th>Added</th><th class="not-export-col"></th></tr>
+                    </thead>
+                    <tbody>
+                        @foreach (var t in Model)
+                        {
+                            <tr>
+                                <td>@t.document_type_code</td>
+                                <td>@t.name</td>
+                                <td>@t.template_version</td>
+                                <td>@(t.department_code ?? "All")</td>
+                                <td>@(t.authoring_mode switch { "EDITOR" => "Editor", "BOTH" => "Editor + file", _ => "File" })</td>
+                                <td>@if (!string.IsNullOrEmpty(t.storage_path)) { <a asp-action="Download" asp-route-id="@t.id">@t.file_name</a><br /><small class="font-monospace text-muted">@t.sha256?.Trim()[..Math.Min(16, t.sha256.Trim().Length)]…</small> } else { <span class="text-muted">-</span> }</td>
+                                <td>@t.effective_from?.ToString("dd-MMM-yyyy")</td>
+                                <td>@if (t.is_current) { <span class="badge bg-success">Current</span> } else { <span class="badge bg-secondary">Withdrawn @t.superseded_at?.ToString("dd-MMM-yyyy")</span> }</td>
+                                <td>@t.created_at.ToString("dd-MMM-yyyy") · @t.created_by_name</td>
+                                <td>
+                                    @if (t.is_current)
+                                    {
+                                        <a class="btn btn-sm btn-soft-primary mb-1" asp-action="Content" asp-route-id="@t.id">Edit body</a>
+                                        <button type="button" class="btn btn-sm btn-soft-danger" onclick="openReasonModal(this)"
+                                                data-url="@Url.Action("Supersede")" data-fields='@Json.Serialize(new { id = t.id })'
+                                                data-title="Withdraw template @t.name v@(t.template_version)"
+                                                data-text="Authors can no longer start a document from it. Documents already created from it are unaffected.">Withdraw</button>
+                                    }
+                                </td>
+                            </tr>
+                        }
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+<partial name="_ReasonModal" />
+<partial name="_AdminTableJS" />
+<script>
+    document.addEventListener('DOMContentLoaded', function () { initAdminTable('#assetlist', [0, 1, 2, 3, 4, 5, 6, 7, 8], [[0, 'asc']]); });
+</script>

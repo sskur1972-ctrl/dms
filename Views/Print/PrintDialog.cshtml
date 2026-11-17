@@ -1,0 +1,7 @@
+@model DMS.Web.Services.Rendition.ControlledCopyPdf
+@{Layout=null;Context.Response.Headers.CacheControl="no-store";Context.Response.Headers["Content-Security-Policy"]="default-src 'self'; worker-src 'self'; img-src 'self' data: blob:; script-src 'self' 'wasm-unsafe-eval'; style-src 'self' 'unsafe-inline'; frame-ancestors 'self'; base-uri 'self'";}
+<!doctype html><html lang="en"><head><meta charset="utf-8" /><title>@Model.FileName</title><link rel="stylesheet" href="~/css/controlled-print.css" asp-append-version="true" /></head><body>
+<div class="print-header"><strong>@Model.FileName</strong><span id="print-status" role="status">Preparing numbered copy…</span><button id="print-once" type="button" hidden>Print one copy</button></div>
+<main id="controlled-print-pages" aria-label="Numbered controlled copy"></main>
+<script type="application/json" id="controlled-print-data">@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Convert.ToBase64String(Model.Bytes)))</script>
+<script type="module" src="~/js/controlled-print.mjs" asp-append-version="true"></script></body></html>

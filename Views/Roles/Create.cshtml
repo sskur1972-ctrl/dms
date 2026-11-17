@@ -1,0 +1,318 @@
+﻿@using DMS.Model.Account
+@model RolesData
+
+
+@{
+    Layout = "_Layout";
+}
+
+<div class="row m-3">
+    <div class="col-xl-12">
+        <div class="card">
+            <div class="card-header">
+                <h4 class="card-title">Create Roles</h4>
+            </div>
+            <div class="alert alert-warning py-2 mb-3" role="alert" style="font-size: 14px;">
+                ⚠ Fields marked <span style="color: red;">*</span> are required.
+            </div>
+            <div class="card-body">
+                <form id="frmSubmit" asp-controller="Roles" asp-action="Create" class="row g-3 needs-validation" novalidate>
+                    <div class="card">
+                        <div class="card-body">
+                            <div class="form-row row">
+
+                                <div class="form-group col-xl-6  mb-4">
+                                    <label asp-for="Roles_Name" class="form-label"></label> <span style="color: red;">*</span>
+                                    <input asp-for="Roles_Name" class="form-control alphaspace" maxlength="20" required placeholder="Enter Role Name" />
+                                    <span asp-validation-for="Roles_Name" class="text-danger"></span>
+
+                                </div>
+                                <div class="col-lg-12">
+
+
+                                  @*   <div class="col-md-12">
+                                        <div class="mb-3">
+                                            <label asp-for="objPermissions"></label> <span style="color: red;">*</span>
+                                            <div class="row">
+                                                @{
+                                                    int a = 0;
+                                                    string currentModule = string.Empty;
+                                                }
+
+                                                @foreach (var permissions in Model.objPermissions)
+                                                {
+
+
+                                                    <div class="col-6">
+                                                        <div class="mb-3">
+                                                            <div class="form-check">
+                                                                <input class="form-check-input" type="checkbox" name="SelectedPermissionIds" value="@permissions.pk_permission" id="permission_@permissions.pk_permission"
+                                                                @(Model.SelectedPermissionIds != null && Model.SelectedPermissionIds.Contains(permissions.pk_permission) ? "checked" : "") />
+                                                                <label class="form-check-label" for="permission_@permissions.pk_permission">@permissions.permission</label>
+                                                            </div>
+                                                        </div>
+                                                    </div>
+                                                    a++;
+                                                }
+
+                                            </div>
+
+                                        </div>
+
+                                    </div> *@
+
+                                    <div class="col-md-12">
+                                        <div class="mb-3">
+                                            <label asp-for="objPermissions"></label> <span style="color: red;">*</span>
+
+                                            @* Group by Parent Module *@
+                                            @{
+                                                var groupedByParent = Model.objPermissions
+                                                .Where(p => !string.IsNullOrWhiteSpace(p.Parent_module))
+                                                .GroupBy(p => p.Parent_module)
+                                                .OrderBy(g => g.Key)
+                                                .ToList();
+                                            }
+
+                                            @foreach (var parentGroup in groupedByParent)
+                                            {
+                                                <div class="parent-module mb-3">
+                                                    <h5><strong>@parentGroup.Key</strong></h5> <!-- Parent Module -->
+
+                                                    @* Group by Sub Module *@
+                                                    @{
+                                                        var groupedBySub = parentGroup
+                                                        .Where(p => !string.IsNullOrWhiteSpace(p.moduleName))
+                                                        .GroupBy(p => p.moduleName)
+                                                        .OrderBy(g => g.Key)
+                                                        .ToList();
+                                                    }
+
+                                                    @foreach (var subGroup in groupedBySub)
+                                                    {
+                                                        <div class="sub-module mb-2" style="margin-left: 20px;">
+                                                            <h6 class="text-primary"><strong>@subGroup.Key</strong></h6> <!-- Sub Module -->
+
+                                                            <div class="row">
+                                                                @foreach (var permission in subGroup)
+                                                                {
+                                                                    <div class="col-6">
+                                                                        <div class="form-check mb-2">
+                                                                            <input class="form-check-input"
+                                                                                   type="checkbox"
+                                                                                   name="SelectedPermissionIds"
+                                                                                   value="@permission.pk_permission"
+                                                                                   id="permission_@permission.pk_permission"
+                                                                            @(permission.IsChecked ? "checked" : "") />
+                                                                            <label class="form-check-label"
+                                                                                   for="permission_@permission.pk_permission">
+                                                                                @permission.permission
+                                                                            </label>
+                                                                        </div>
+                                                                    </div>
+                                                                }
+                                                            </div>
+                                                        </div>
+                                                    }
+
+                                                    @* Handle permissions with no SubModule (optional) *@
+                                                    @{
+                                                        var noSubModulePermissions = parentGroup
+                                                        .Where(p => string.IsNullOrWhiteSpace(p.moduleName))
+                                                        .ToList();
+                                                    }
+
+                                                    @if (noSubModulePermissions.Any())
+                                                    {
+                                                        <div class="sub-module mb-2" style="margin-left: 20px;">
+                                                            <h6>Other</h6>
+                                                            <div class="row">
+                                                                @foreach (var permission in noSubModulePermissions)
+                                                                {
+                                                                    <div class="col-6">
+                                                                        <div class="form-check mb-2">
+                                                                            <input class="form-check-input"
+                                                                                   type="checkbox"
+                                                                                   name="SelectedPermissionIds"
+                                                                                   value="@permission.pk_permission"
+                                                                                   id="permission_@permission.pk_permission"
+                                                                            @(permission.IsChecked ? "checked" : "") />
+                                                                            <label class="form-check-label"
+                                                                                   for="permission_@permission.pk_permission">
+                                                                                @permission.permission
+                                                                            </label>
+                                                                        </div>
+                                                                    </div>
+                                                                }
+                                                            </div>
+                                                        </div>
+                                                    }
+                                                </div>
+                                            }
+                                        </div>
+                                    </div>
+
+
+                                </div>
+
+                            </div>
+
+                            <div class="form-group">
+                                <div class="text-end">
+                                    <a asp-action="Index" class="btn btn-primary ms-2">Back To List</a>
+                                    <button type="submit" class="btn btn-success">
+                                        Save
+                                    </button>
+
+                                   
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+<style>
+    .date-icon svg.date-ic {
+        position: absolute;
+        right: 1px;
+        top: 70%;
+        transform: translateY(-50%);
+        background: #8667F2;
+        padding: 8px; /* Adjust padding if needed */
+        border-radius: 8px;
+        width: 40px; /* Increased width */
+        height: 40px; /* Increased height */
+        color: white;
+        pointer-events: none;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .custom-select-wrapper {
+        position: relative;
+    }
+
+        .custom-select-wrapper .dropdown-icon {
+            position: absolute;
+            top: 50%;
+            right: 1rem; /* tweak this to taste */
+            transform: translateY(-50%);
+            pointer-events: none; /* so clicks still open the select */
+            color: #6c757d; /* match Bootstrap’s default text-gray */
+        }
+
+</style>
+@section Scripts {
+    @{
+        await Html.RenderPartialAsync("_ValidationScriptsPartial");
+    }
+}
+
+<script>
+
+    document.addEventListener("DOMContentLoaded", function () {
+
+        $('#Roles_Name').change(function () {
+            debugger;
+            var role_name = $('#Roles_Name').val();
+            $.ajax({
+                type: 'post',
+                url: "/Roles/IsRoleExisting",
+                datatype: "json",
+                data: { "role": role_name },
+                success: function (data) {
+                    debugger;
+                    if (data == "true") {
+                        $('#Roles_Name').val("");  // Corrected this line
+                        Swal.fire({
+                            type: 'info',
+                            title: 'Role already exist',
+                            confirmButtonColor: '#2fcc38',
+                            confirmButtonText: 'OK',
+                        });
+
+                    }
+                }
+            });
+        });
+
+        $(".alphaspace").on("keyup", function () {
+
+            var regex = /[^a-zA-Z ]/g;
+
+            if (this.value.match(regex)) {
+
+                this.value = this.value.replace(regex, '');
+
+            }
+
+        });
+    });
+
+       function submitForm() {
+        var fields = [
+            { id: "#Roles_Name", errorId: "#role_name_error", message: "Please Provide Role Name" }
+        ];
+
+        var allFilled = true;
+
+        // Validate text fields
+        fields.forEach(function (field) {
+            var value = $(field.id).val();
+            if (value == null || value.trim() === "") {
+                allFilled = false;
+                $(field.errorId).text(field.message);
+            } else {
+                $(field.errorId).text("");
+            }
+
+            // Real-time validation
+            $(field.id).on("input change", function () {
+                if ($(this).val() != null && $(this).val().trim() !== "") {
+                    $(field.errorId).text("");
+                }
+            });
+        });
+
+        // Validate permission checkboxes
+        var checkboxes = $('input[name="SelectedPermissionIds"]:checked');
+        if (checkboxes.length === 0) {
+            allFilled = false;
+            Swal.fire({
+                icon: "error",
+                title: "Oops...",
+                text: "Please select at least one permission."
+            });
+        }
+
+        // Submit the form if everything is valid
+        if (allFilled) {
+            $('#frmSubmit').submit();
+        }
+
+        return false; // prevent default if called via onclick
+    }
+
+
+</script>
+<script>
+    $(document).ready(function () {
+        $('#frmSubmit').on('submit', function (e) {
+            if ($('input[name="SelectedPermissionIds"]:checked').length === 0) {
+                e.preventDefault();
+                Swal.fire({
+                    icon: "error",
+                    title: "Oops...",
+                    text: "Please select at least one permission."
+                });
+            }
+        });
+    });
+</script>
